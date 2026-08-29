@@ -241,7 +241,13 @@ def _evidence_image_to_dict(img) -> dict:
         "source_frame_id": img.source_frame_id,
         "sha256": img.sha256,
         "is_real_camera_frame": img.is_real_camera_frame,
-        "url": f"/api/v1/incidents/{img.incident_id}/evidence",
+        # Relative to API_BASE (frontend/src/api/client.ts), which already
+        # includes the /api/v1 prefix -- a leading /api/v1 here doubled it
+        # (frontend/tests/e2e/interview-demo.e2e.mjs caught this: the review
+        # drawer's evidence <img> requested /api/v1/api/v1/... and silently
+        # failed to load in every environment; no prior test ever opened the
+        # drawer and checked the image actually loaded).
+        "url": f"/incidents/{img.incident_id}/evidence",
     }
 
 

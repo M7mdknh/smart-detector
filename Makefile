@@ -79,6 +79,9 @@ test-full:
 e2e:
 	cd frontend && npm run test:e2e
 
+interview-demo-e2e:
+	cd frontend && npm run test:e2e:interview-demo
+
 train-sensor:
 	cd $(BACKEND) && .venv/bin/python scripts/train_leak_model.py
 

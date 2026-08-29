@@ -9,6 +9,7 @@
     "lint": "oxlint",
     "test": "vitest",
     "test:e2e": "bash ../scripts/run-e2e.sh",
+    "test:e2e:interview-demo": "bash ../scripts/run-interview-demo-e2e.sh",
     "preview": "vite preview"
   },
   "dependencies": {
