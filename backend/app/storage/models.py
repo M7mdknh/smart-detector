@@ -78,6 +78,7 @@ class VisionEvidenceRow(Base):
     vest_state: Mapped[str] = mapped_column(String(16), default="UNKNOWN")
     gas_zone_membership: Mapped[str] = mapped_column(String(16), default="UNKNOWN")
     overhead_zone_membership: Mapped[str] = mapped_column(String(16), default="UNKNOWN")
+    restricted_zone_membership: Mapped[str] = mapped_column(String(16), default="UNKNOWN")
     dwell_seconds: Mapped[float | None] = mapped_column(Float, nullable=True)
 
 
@@ -103,6 +104,7 @@ class IncidentRow(Base):
     version: Mapped[int] = mapped_column(Integer, default=1)
 
     evidence: Mapped[list["IncidentEvidenceRow"]] = relationship(back_populates="incident")
+    evidence_images: Mapped[list["IncidentEvidenceImageRow"]] = relationship(back_populates="incident", order_by="IncidentEvidenceImageRow.created_at")
     audit_events: Mapped[list["AuditEventRow"]] = relationship(back_populates="incident", order_by="AuditEventRow.sequence")
 
     __table_args__ = (UniqueConstraint("dedup_key", "is_active", name="uq_active_dedup"),)
@@ -119,6 +121,34 @@ class IncidentEvidenceRow(Base):
     created_at: Mapped[datetime] = mapped_column(UTCDateTime)
 
     incident: Mapped["IncidentRow"] = relationship(back_populates="evidence")
+
+
+class IncidentEvidenceImageRow(Base):
+    """One annotated evidence snapshot per logical incident-creation or
+    meaningful-severity-escalation event (never one per frame -- see
+    app/services/evidence_image.py). Multiple rows may exist per incident;
+    the most recent is the "current" evidence image."""
+
+    __tablename__ = "incident_evidence_images"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    incident_id: Mapped[str] = mapped_column(String(36), ForeignKey("incidents.incident_id"), index=True)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime, index=True)
+    reason: Mapped[str] = mapped_column(String(32))  # "CREATED" | "SEVERITY_ESCALATED"
+    incident_type: Mapped[str] = mapped_column(String(64))
+    severity: Mapped[str] = mapped_column(String(16))
+    zone_id: Mapped[str] = mapped_column(String(64))
+    track_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    ppe_helmet_state: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    ppe_vest_state: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
+    model_version: Mapped[str] = mapped_column(String(32))
+    source: Mapped[str] = mapped_column(String(32))  # provenance of the underlying evidence (e.g. SIMULATION_GROUND_TRUTH)
+    source_frame_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    file_path: Mapped[str] = mapped_column(String(256))  # relative to backend/, never a raw client-supplied path
+    sha256: Mapped[str] = mapped_column(String(64))
+
+    incident: Mapped["IncidentRow"] = relationship(back_populates="evidence_images")
 
 
 class AuditEventRow(Base):

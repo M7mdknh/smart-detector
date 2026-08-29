@@ -22,6 +22,7 @@ test-results/
 .cache/
 
 # Local runtime state and secrets
+backend/data/
 *.db
 *.sqlite*
 *.db-journal
@@ -56,7 +57,6 @@ models/artifacts/*
 !models/artifacts/leak-classifier-xgb.json
 !models/artifacts/ppe-yolo11n.pt
 !models/artifacts/ppe-yolo11n-v1.0.pt
-!models/artifacts/ppe-yolo11n-v1.1.pt
 !models/artifacts/forecast-gru.pt
 !models/artifacts/forecast-gru-scaler.json
 !models/artifacts/forecast-gru-feature-schema.json

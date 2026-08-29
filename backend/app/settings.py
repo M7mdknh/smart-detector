@@ -46,6 +46,9 @@ class Settings(BaseSettings):
     vision_replay_path: Path = REPO_ROOT / "demo-assets" / "replay.mp4"
     vision_target_fps: float = 10.0
 
+    # incident evidence images (rendered annotated snapshots, see app/services/evidence_image.py)
+    incident_evidence_dir: Path = BACKEND_ROOT / "data" / "incident-evidence"
+
     # simulation defaults
     default_seed: int = 42
 

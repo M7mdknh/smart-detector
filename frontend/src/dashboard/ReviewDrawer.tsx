@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useIncidentAction, useIncidentAudit, useIncidentDetail } from "./hooks";
 import { SEVERITY_COLOR, formatClock } from "../lib/format";
-import { ApiError } from "../api/client";
+import { ApiError, API_BASE } from "../api/client";
 
 const ACTION_LABEL: Record<string, string> = {
   ACKNOWLEDGE: "Acknowledge",
@@ -78,6 +78,32 @@ export function ReviewDrawer({ incidentId, onClose }: { incidentId: string | nul
               ) : (
                 <p className="muted">No linked evidence records.</p>
               )}
+              {incident.evidence_images && incident.evidence_images.length > 0 && (
+                <div className="evidence-images">
+                  {incident.evidence_images.map((img) => (
+                    <div key={img.id} className="evidence-image-item">
+                      <a href={`${API_BASE}${img.url}`} target="_blank" rel="noreferrer">
+                        <img
+                          src={`${API_BASE}${img.url}`}
+                          alt={`Evidence snapshot (${img.reason})`}
+                          className="evidence-thumbnail"
+                        />
+                      </a>
+                      <p className="muted">
+                        {img.reason} — track {img.track_id ?? "unknown"} — {formatClock(img.created_at)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="action-row">
+                <a href={`${API_BASE}/incidents/${incident.incident_id}/report.json`} target="_blank" rel="noreferrer">
+                  <button type="button">Download report (JSON)</button>
+                </a>
+                <a href={`${API_BASE}/incidents/${incident.incident_id}/report.csv`} target="_blank" rel="noreferrer">
+                  <button type="button">Download report (CSV)</button>
+                </a>
+              </div>
             </section>
 
             <section>

@@ -220,9 +220,105 @@ def get_incident(incident_id: str, session: Annotated[Session, Depends(db_sessio
         raise ApiError("NOT_FOUND", "incident not found", status_code=404)
     d = _incident_row_to_dict(row)
     d["evidence"] = [{"evidence_type": e.evidence_type, "evidence_id": e.evidence_id, "reason": e.reason} for e in row.evidence]
+    d["evidence_images"] = [_evidence_image_to_dict(img) for img in row.evidence_images]
     allowed = [a.value for (s, a), _ in incident_service.ALLOWED_TRANSITIONS.items() if s.value == row.state]
     d["allowed_actions"] = allowed + ["COMMENT"]
     return d
+
+
+def _evidence_image_to_dict(img) -> dict:
+    return {
+        "id": img.id,
+        "incident_id": img.incident_id,
+        "created_at": img.created_at,
+        "reason": img.reason,
+        "track_id": img.track_id,
+        "ppe_helmet_state": img.ppe_helmet_state,
+        "ppe_vest_state": img.ppe_vest_state,
+        "confidence": img.confidence,
+        "model_version": img.model_version,
+        "source": img.source,
+        "source_frame_id": img.source_frame_id,
+        "sha256": img.sha256,
+        "url": f"/api/v1/incidents/{img.incident_id}/evidence",
+    }
+
+
+@router.get("/incidents/{incident_id}/evidence")
+def get_incident_evidence(incident_id: str, session: Annotated[Session, Depends(db_session)]):
+    """Serves the most recent annotated evidence image for this incident, looked
+    up strictly by incident ID -- never a client-supplied filesystem path. 404 if
+    the incident has no captured evidence, or if the file is missing on disk."""
+    from fastapi.responses import FileResponse
+
+    from app.settings import BACKEND_ROOT
+
+    row = session.get(IncidentRow, incident_id)
+    if row is None:
+        raise ApiError("NOT_FOUND", "incident not found", status_code=404)
+    if not row.evidence_images:
+        raise ApiError("NOT_FOUND", "no evidence image captured for this incident", status_code=404)
+
+    latest = row.evidence_images[-1]
+    # file_path is stored relative to backend/ (e.g. "data/incident-evidence/<id>.jpg");
+    # resolve it against the backend root, never against a client-controlled value.
+    resolved = BACKEND_ROOT / latest.file_path
+    if not resolved.exists():
+        raise ApiError("EVIDENCE_FILE_MISSING", "evidence record exists but the image file is missing on disk", status_code=404)
+    return FileResponse(str(resolved), media_type="image/jpeg", filename=f"{incident_id}-evidence.jpg")
+
+
+@router.get("/incidents/{incident_id}/report.json")
+def get_incident_report_json(incident_id: str, session: Annotated[Session, Depends(db_session)]):
+    row = session.get(IncidentRow, incident_id)
+    if row is None:
+        raise ApiError("NOT_FOUND", "incident not found", status_code=404)
+    d = _incident_row_to_dict(row)
+    d["evidence"] = [{"evidence_type": e.evidence_type, "evidence_id": e.evidence_id, "reason": e.reason, "created_at": e.created_at} for e in row.evidence]
+    d["evidence_images"] = [_evidence_image_to_dict(img) for img in row.evidence_images]
+    audit_stmt = select(AuditEventRow).where(AuditEventRow.incident_id == incident_id).order_by(AuditEventRow.sequence)
+    d["audit_trail"] = [
+        {"audit_id": a.audit_id, "actor": a.actor, "action": a.action, "timestamp": a.timestamp, "previous_state": a.previous_state, "new_state": a.new_state, "comment": a.comment}
+        for a in session.execute(audit_stmt).scalars()
+    ]
+    return d
+
+
+@router.get("/incidents/{incident_id}/report.csv")
+def get_incident_report_csv(incident_id: str, session: Annotated[Session, Depends(db_session)]):
+    import csv
+    import io
+
+    from fastapi.responses import Response
+
+    row = session.get(IncidentRow, incident_id)
+    if row is None:
+        raise ApiError("NOT_FOUND", "incident not found", status_code=404)
+
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow([
+        "incident_id", "type", "zone_id", "gas", "severity", "confidence", "state",
+        "opened_at", "updated_at", "acknowledged_at", "resolved_at", "reason_codes",
+        "explanation", "recommended_action", "version",
+        "evidence_image_id", "evidence_image_reason", "evidence_image_track_id",
+        "evidence_image_helmet_state", "evidence_image_vest_state", "evidence_image_model_version",
+        "evidence_image_source", "evidence_image_sha256",
+    ])
+    base = [
+        row.incident_id, row.type, row.zone_id, row.gas, row.severity, row.confidence, row.state,
+        row.opened_at.isoformat(), row.updated_at.isoformat(),
+        row.acknowledged_at.isoformat() if row.acknowledged_at else "",
+        row.resolved_at.isoformat() if row.resolved_at else "",
+        ";".join(row.reason_codes_json or []), row.explanation, row.recommended_action, row.version,
+    ]
+    if row.evidence_images:
+        for img in row.evidence_images:
+            writer.writerow(base + [img.id, img.reason, img.track_id, img.ppe_helmet_state, img.ppe_vest_state, img.model_version, img.source, img.sha256])
+    else:
+        writer.writerow(base + ["", "", "", "", "", "", "", ""])
+
+    return Response(content=buf.getvalue(), media_type="text/csv", headers={"Content-Disposition": f"attachment; filename={incident_id}-report.csv"})
 
 
 @router.post("/incidents/{incident_id}/actions")

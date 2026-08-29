@@ -116,6 +116,9 @@ class TrackDwell:
     overhead_membership: ZoneMembership = ZoneMembership.OUTSIDE
     overhead_in_since: datetime | None = None
     overhead_out_since: datetime | None = None
+    restricted_membership: ZoneMembership = ZoneMembership.OUTSIDE
+    restricted_in_since: datetime | None = None
+    restricted_out_since: datetime | None = None
     helmet_state: PpeState = PpeState.UNKNOWN
     helmet_positive_since: datetime | None = None
     helmet_negative_since: datetime | None = None
@@ -285,6 +288,7 @@ def associate_and_dwell(
                     confidence=conf, bbox_x1=box[0], bbox_y1=box[1], bbox_x2=box[2], bbox_y2=box[3],
                     helmet_state=PpeState.UNKNOWN.value, vest_state=PpeState.UNKNOWN.value,
                     gas_zone_membership=ZoneMembership.UNKNOWN.value, overhead_zone_membership=ZoneMembership.UNKNOWN.value,
+                    restricted_zone_membership=ZoneMembership.UNKNOWN.value,
                 )
             )
             continue
@@ -296,6 +300,7 @@ def associate_and_dwell(
         gas_zone = zone_config.zone_of_type("GAS_EXPOSURE")
         overhead_zone = zone_config.zone_of_type("OVERHEAD_WORK")
         vest_zone = zone_config.zone_of_type("MANDATORY_VEST")
+        restricted_zone = zone_config.zone_of_type("RESTRICTED")
 
         in_gas = bool(gas_zone) and point_in_polygon(bottom_center[0], bottom_center[1], gas_zone.points)
         dwell.gas_membership, dwell.gas_in_since, dwell.gas_out_since = _apply_dwell(
@@ -308,6 +313,11 @@ def associate_and_dwell(
             dwell.overhead_membership, ZoneMembership.INSIDE, ZoneMembership.OUTSIDE,
         )
         in_vest_zone = bool(vest_zone) and point_in_polygon(bottom_center[0], bottom_center[1], vest_zone.points)
+        in_restricted = bool(restricted_zone) and point_in_polygon(bottom_center[0], bottom_center[1], restricted_zone.points)
+        dwell.restricted_membership, dwell.restricted_in_since, dwell.restricted_out_since = _apply_dwell(
+            event_time, in_restricted, dwell.restricted_in_since, dwell.restricted_out_since, ZONE_ENTER_SECONDS, ZONE_EXIT_SECONDS,
+            dwell.restricted_membership, ZoneMembership.INSIDE, ZoneMembership.OUTSIDE,
+        )
 
         # PPE evidence for this specific person comes from the global one-to-one
         # assignment computed above -- a helmet/vest box already claimed by
@@ -341,6 +351,7 @@ def associate_and_dwell(
                 confidence=conf, bbox_x1=box[0], bbox_y1=box[1], bbox_x2=box[2], bbox_y2=box[3],
                 helmet_state=dwell.helmet_state.value, vest_state=dwell.vest_state.value,
                 gas_zone_membership=dwell.gas_membership.value, overhead_zone_membership=dwell.overhead_membership.value,
+                restricted_zone_membership=dwell.restricted_membership.value,
                 dwell_seconds=(event_time - dwell.gas_in_since).total_seconds() if dwell.gas_in_since else None,
             )
         )

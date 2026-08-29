@@ -16,7 +16,7 @@ relied upon; its "CURRENT clean-environment run" section is the current evidence
 matrix's Model/Data Leakage and Vision Cases plus the physics/exposure calculation cases
 folded into A16's proof — see note at the end of the E table.)
 
-## A01–A16
+## A01–A18
 
 | ID | Pass/Fail | Proof type | Exact test/command | Artifact/log path | Limitation notes |
 |---|---|---|---|---|---|
@@ -36,6 +36,9 @@ folded into A16's proof — see note at the end of the E table.)
 | A14 | PASS | manual inspection + command | Backend restart with an open incident, then `GET` incident/audit endpoints; SQLite persistence via SQLAlchemy/Alembic | `docs/FINAL_VERIFICATION.md` §2 (`alembic upgrade head` clean on every restart); `backend/app/storage/models.py` | none |
 | A15 | PASS | automated test | `tests/test_incident_workflow.py::test_invalid_transition_rejected`, `::test_stale_version_rejected` | `backend/tests/test_incident_workflow.py:68,76`; `backend/app/services/incident_service.py:170-184` (`VERSION_CONFLICT`/`INVALID_TRANSITION`, both HTTP 409) | none |
 | A16 | PASS WITH LIMITATION | command | `make setup`, `make test`, `make evaluate`, `make evaluate-forecast`, `make lint`, `make demo`, `docker compose build/up/down` — all re-run against a genuinely fresh checkout this pass | `docs/FINAL_VERIFICATION.md` "CURRENT clean-environment run" | Both defects found in the prior pass are fixed and re-verified: `evaluate_all.py`'s exit-code check now correctly distinguishes an honest `SKIPPED` (exit 0) from a real subprocess failure (`sys.exit(1)`); `make setup` now creates `backend/data` before running migrations (a second real bug found and fixed *during this pass's own re-verification*, previously masked because the directory already existed in every environment this project had been tested in). Remaining limitation: this sandbox's account-level disk quota (not a `/`-mount space limit, not a repository defect — confirmed via `du -sh` showing ~66GB already consumed by the account's own unrelated personal directories) made it impossible to complete a from-scratch `pip install -r requirements-vision.txt` (torch/ultralytics/opencv, ~2-3GB) or re-run `make e2e` a second time in this pass; the lean (no-vision-extras) clean checkout otherwise passes every command with exit 0, and the vision-dependent code paths themselves are separately verified against the identical source tree in the pre-existing, already-provisioned dev venv (116/116 tests passing, 0 skipped, 0 failed). |
+
+| A17 | PASS | automated test + live smoke test | `pytest -q tests/test_restricted_zone.py` (5 tests: polygon config, foot-point membership, CV-replay dwell, ground-truth dwell + incident creation/dedup, HIGH-severity risk decision); live: `engine.load_scenario` + `engine.set_worker(x=5.0, y=-5.0, ...)` (inside `RESTRICTED_ZONE_BOX`) + 20 simulated ticks opened a real `PERSON_IN_RESTRICTED_ZONE`/`HIGH` incident in a fresh sqlite db | `backend/tests/test_restricted_zone.py`; `backend/app/inference/zone_config.json` (`restricted-zone`); `backend/app/services/vision_ground_truth.py` (`RESTRICTED_ZONE_BOX`); `backend/app/domain/risk/policy.py` (`PERSON_IN_RESTRICTED_ZONE`) | none — restricted areas remain configurable polygons evaluated against tracked/simulated foot points, not a new YOLO class, per CLAUDE.md |
+| A18 | PASS | automated test + live smoke test | `pytest -q tests/test_incident_evidence_images.py` (8 tests: creation, no-duplication on repeated evaluation, second image on severity escalation, no image for non-eligible types, evidence-endpoint 200/404s including missing-file-on-disk, report.json/report.csv content); live: the same A17 smoke run produced a real 41KB JPEG at `backend/data/incident-evidence/<incident_id>-<suffix>.jpg`, and `get_incident_report_json`/`get_incident_report_csv` returned real matching content for that incident | `backend/tests/test_incident_evidence_images.py`; `backend/app/services/evidence_image.py`; `backend/app/api/routes.py` (`/incidents/{id}/evidence`, `/report.json`, `/report.csv`) | Evidence images for ground-truth-driven incidents are labelled schematic reconstructions (zone/box/track-ID/timestamp/PPE-state burned in from the same evidence data that drove the decision), not real camera captures — documented in `evidence_image.py`'s module docstring, since no real camera frame is ever correlated with a simulator-driven incident (CLAUDE.md invariant #3) |
 
 ### Environment-scoped test results (for A16)
 
@@ -60,6 +63,23 @@ now fully resolved; the current fresh-checkout shortfall is disk quota, not a mi
 dependency pin. Frontend: 18/18 passed (not independently re-run this pass; see
 `docs/FINAL_VERIFICATION.md`'s "CURRENT run" e2e/frontend disclosure).
 
+### v2.0 test results (this pass, freshly re-run)
+
+Full dev venv (vision deps present): **140 passed, 0 failed** (up from 116 — 24 new tests:
+5 restricted-zone, 8 evidence-image, 11 dataset-tooling).
+
+A genuinely lean venv built on the same larger (non-tmpfs) filesystem used for this pass
+(`python3.12 -m venv` + `pip install -r requirements.txt` only, no vision extras): **116
+passed, 4 skipped, 0 failed** — confirming the `make setup`/`make test` split (item A in this
+release) actually produces 0 failures in a lean environment, closing out A16's previously
+disk-quota-blocked lean re-verification for the *test* dimension specifically (the disk-quota
+constraint on a full vision install remains unrelated and unresolved, see A16).
+
+Frontend, freshly re-run this pass: Vitest `npm test -- --run` — **18 passed** (2 test files);
+Playwright `make e2e` — passed (`E2E OK: dashboard and simulation pages render real backend
+state with no console errors.`), including a live Alembic migration run
+(`3b1af778ba89 -> a1c2e4f5b678`) confirming the new schema applies cleanly end-to-end.
+
 ## E01–E12
 
 | ID | Pass/Fail | Proof type | Exact test/command | Artifact/log path | Limitation notes |
@@ -67,7 +87,7 @@ dependency pin. Frontend: 18/18 passed (not independently re-run this pass; see
 | E01 | PASS | automated test | `pytest -q tests/test_ppe_association.py` (32 passed, includes reorder/tie-break cases) | `backend/tests/test_ppe_association.py` | none |
 | E02 | PASS | automated test | `pytest -q tests/test_vision_association.py` (dwell timing tests, 8 functions) | `backend/tests/test_vision_association.py:23,34,47,54,66,78,86,95` | none |
 | E03 | PASS | manual inspection | `backend/app/inference/zone_config.json` and PPE threshold config read for versioning | `backend/app/inference/zone_config.json`; `backend/tests/test_ppe_threshold_loading.py` | Threshold re-tuning claim in `docs/README.md` §8 not independently re-run this pass (no live GPU training re-executed); relies on prior report plus the fallback-loading tests, which do pass live (`pytest -q tests/test_ppe_threshold_loading.py` — 4 passed). |
-| E04 | PASS WITH LIMITATION | manual inspection | Registry/checksum inspection | `models/registry.json`; `docs/FINAL_VERIFICATION.md` §3 artifact table | v1.0 and v1.1 checksums both verified and both match registry, confirming the untouched-original-plus-promoted-new-version claim. Limitation: `models/artifacts/ppe-yolo11n-v1.1.pt` is a byte-identical, unreferenced duplicate of `ppe-yolo11n.pt` (5.2MB dead weight, not itself a correctness bug). |
+| E04 | RESOLVED IN v2.0 | manual inspection + `git rm` | Registry/checksum inspection; duplicate removal | `models/registry.json`; `docs/FINAL_VERIFICATION.md` §3 artifact table (v1.0 snapshot, left unedited as a historical record) | v1.0's PASS WITH LIMITATION flagged `models/artifacts/ppe-yolo11n-v1.1.pt` as a byte-identical (`sha256=a6b5aedc326b2ad9118d3f5ce1f97769c746b9df92b073df0c6d62b7bacb38ae`), unreferenced (grepped across code/tests/Makefile/docker files/docs/`models/registry.json`/demo scripts — zero references by that filename) duplicate of `ppe-yolo11n.pt`. In v2.0 this file was `git rm`'d and its `.gitignore` allowlist line removed; `models/artifacts/ppe-yolo11n.pt` (the registered v1.1 artifact) and `ppe-yolo11n-v1.0.pt` (the registered previous version) are untouched. |
 | E05 | PASS | automated artifact check | Read `gru_leakage_proof.json` | `models/evaluation/gru_leakage_proof.json` — all 4 checks (`no_scenario_in_multiple_splits`, `no_overlapping_window_crosses_splits`, `feature_timestamps_never_exceed_cutoff`, `no_forbidden_features`) true | none |
 | E06 | PASS | manual inspection | Prior report's repeat-run byte-identical SHA-256 claim (not re-executed this pass; would require re-running `make train-forecast` twice, ~minutes of GPU/CPU time, out of scope for a re-verification-only pass) | `docs/FINAL_VERIFICATION.md`; `models/registry.json` (`forecast-gru.pt` checksum) | Not independently re-run in this pass; resting on the prior agent's report plus the fact the shipped artifact's checksum matches registry (static consistency check only, not a fresh reproducibility run). |
 | E07 | PASS | command | `make evaluate-forecast` | `models/evaluation/gru_benchmark_report.json` (confirmed present and regenerated per `docs/FINAL_VERIFICATION.md`: exit 0, hybrid promoted per stated promotion criteria) | none |

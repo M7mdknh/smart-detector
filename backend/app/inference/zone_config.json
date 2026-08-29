@@ -19,6 +19,12 @@
       "type": "MANDATORY_VEST",
       "label": "Mandatory-vest zone",
       "points": [[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]]
+    },
+    {
+      "id": "restricted-zone",
+      "type": "RESTRICTED",
+      "label": "Restricted zone",
+      "points": [[0.3, 0.6], [0.7, 0.6], [0.7, 1.0], [0.3, 1.0]]
     }
   ],
   "note": "Default demo geometry: gas-exposure/overhead-work are still a left/right split (the bundled replay is a slideshow of distinct licensed still images, not one continuous factory floor shot -- see demo-assets/REPLAY_SOURCE.md), but zones are now real polygons (>=3 points) loaded from versioned config rather than hardcoded bounding-box constants. mandatory-vest defaults to the full frame, matching the P0 behavior where vest applies everywhere; narrow it to a sub-area once a calibrated camera view is available."

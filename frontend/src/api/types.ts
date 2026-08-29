@@ -59,6 +59,21 @@ export interface Incident {
   recommended_action: string;
   version: number;
   evidence?: { evidence_type: string; evidence_id: string; reason: string }[];
+  evidence_images?: {
+    id: string;
+    incident_id: string;
+    created_at: string;
+    reason: string;
+    track_id: number | null;
+    ppe_helmet_state: string | null;
+    ppe_vest_state: string | null;
+    confidence: number | null;
+    model_version: string;
+    source: string;
+    source_frame_id: number | null;
+    sha256: string;
+    url: string;
+  }[];
   allowed_actions?: string[];
 }
 

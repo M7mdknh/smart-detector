@@ -18,6 +18,11 @@ from app.storage.models import VisionEvidenceRow
 
 GAS_ZONE_BOX = (3.0, 3.0, 8.0, 8.0)  # x1, y1, x2, y2 in floor meters
 OVERHEAD_ZONE_BOX = (-8.0, -8.0, -3.0, -3.0)
+# Third configurable zone TYPE, reusing the exact same polygon(box)-membership +
+# foot-point + dwell-timer mechanism as gas/overhead (CLAUDE.md: restricted areas
+# are not a YOLO class, they are configurable polygons evaluated against tracked
+# worker foot points). Distinct quadrant so it never overlaps gas or overhead.
+RESTRICTED_ZONE_BOX = (3.0, -8.0, 8.0, -3.0)
 
 ZONE_ENTER_SECONDS = 2.0
 ZONE_EXIT_SECONDS = 2.0
@@ -41,6 +46,10 @@ class _TrackDwellState:
     overhead_inside_since: datetime | None = None
     overhead_outside_since: datetime | None = None
     overhead_membership: ZoneMembership = ZoneMembership.OUTSIDE
+
+    restricted_inside_since: datetime | None = None
+    restricted_outside_since: datetime | None = None
+    restricted_membership: ZoneMembership = ZoneMembership.OUTSIDE
 
     helmet_noncompliant_since: datetime | None = None
     helmet_compliant_since: datetime | None = None
@@ -87,6 +96,12 @@ def emit_ground_truth(run_id: str, zone_id: str, worker_x: float, worker_y: floa
         state.overhead_membership, ZoneMembership.INSIDE, ZoneMembership.OUTSIDE,
     )
 
+    in_restricted = _in_box(worker_x, worker_y, RESTRICTED_ZONE_BOX)
+    state.restricted_membership, state.restricted_inside_since, state.restricted_outside_since = _apply_dwell(
+        now, in_restricted, state.restricted_inside_since, state.restricted_outside_since, ZONE_ENTER_SECONDS, ZONE_EXIT_SECONDS,
+        state.restricted_membership, ZoneMembership.INSIDE, ZoneMembership.OUTSIDE,
+    )
+
     helmet_missing = in_overhead and not helmet_on
     state.helmet_state, state.helmet_noncompliant_since, state.helmet_compliant_since = _apply_dwell(
         now, helmet_missing, state.helmet_noncompliant_since, state.helmet_compliant_since, PPE_VIOLATION_SECONDS, PPE_CLEAR_SECONDS,
@@ -123,6 +138,7 @@ def emit_ground_truth(run_id: str, zone_id: str, worker_x: float, worker_y: floa
         vest_state=state.vest_state.value,
         gas_zone_membership=state.gas_membership.value,
         overhead_zone_membership=state.overhead_membership.value,
+        restricted_zone_membership=state.restricted_membership.value,
         dwell_seconds=dwell_seconds,
     )
     return row

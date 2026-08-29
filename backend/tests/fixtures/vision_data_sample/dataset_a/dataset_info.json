@@ -1,0 +1,7 @@
+{
+  "name": "dataset_a",
+  "owner": "synthetic-test-fixture",
+  "url": "https://example.invalid/synthetic-fixture",
+  "license": "synthetic-test-only, not a real dataset license",
+  "version": "0.0.1-fixture"
+}

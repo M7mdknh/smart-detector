@@ -10,11 +10,52 @@ from datetime import datetime, timedelta
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.contracts.enums import Actor, CrossingOutcome, IncidentAction, IncidentState, ZoneMembership
+from app.contracts.enums import Actor, CrossingOutcome, IncidentAction, IncidentState, Severity, ZoneMembership
 from app.contracts.errors import ApiError
 from app.domain.risk.policy import RiskDecision, RiskInputs
+from app.logging_config import get_logger
 from app.settings import get_settings
 from app.storage.models import AuditEventRow, ForecastRow, IncidentEvidenceRow, IncidentRow, VisionEvidenceRow
+
+logger = get_logger(__name__)
+
+_SEVERITY_RANK = {Severity.LOW.value: 1, Severity.MEDIUM.value: 2, Severity.HIGH.value: 3, Severity.CRITICAL.value: 4}
+
+_MEMBERSHIP_FIELD_BY_TYPE = {
+    "PERSON_IN_PREDICTED_GAS_RISK": "gas_zone_membership",
+    "PPE_HELMET_OVERHEAD_VIOLATION": "overhead_zone_membership",
+    "PERSON_IN_RESTRICTED_ZONE": "restricted_zone_membership",
+    # PPE_VEST_VIOLATION has no dedicated zone-membership column (vest applies
+    # per configured mandatory-vest zone, not tracked as its own membership field).
+}
+
+
+def _primary_vision_row(session: Session, zone_id: str, now: datetime, incident_type: str) -> VisionEvidenceRow | None:
+    """Picks the vision-evidence row most relevant to a just-opened/escalated
+    incident, for evidence-image capture -- see app/services/evidence_image.py."""
+    rows = [v for v in _latest_vision_rows(session, zone_id, now) if v.detected_class == "person"]
+    if not rows:
+        return None
+    field = _MEMBERSHIP_FIELD_BY_TYPE.get(incident_type)
+    if field:
+        matching = [v for v in rows if getattr(v, field, None) == ZoneMembership.INSIDE.value]
+        if matching:
+            return matching[0]
+    return rows[0]
+
+
+def _maybe_capture_evidence_image(session: Session, row: IncidentRow, zone_id: str, now: datetime, reason: str) -> None:
+    from app.services.evidence_image import EVIDENCE_ELIGIBLE_TYPES, EvidenceContext, save_evidence_image
+
+    if row.type not in EVIDENCE_ELIGIBLE_TYPES:
+        return
+    try:
+        vision_row = _primary_vision_row(session, zone_id, now, row.type)
+        save_evidence_image(session, row, EvidenceContext(vision_row=vision_row, reason=reason))
+    except Exception:
+        # Best-effort: evidence capture must never fail the safety-critical incident write.
+        logger.exception("failed to capture incident evidence image", extra={"extra_fields": {"incident_id": row.incident_id}})
+
 
 ALLOWED_TRANSITIONS = {
     (IncidentState.OPEN, IncidentAction.ACKNOWLEDGE): IncidentState.ACKNOWLEDGED,
@@ -67,6 +108,7 @@ def build_risk_inputs(session: Session, forecast: ForecastRow, exposure: dict, z
         v.overhead_zone_membership == ZoneMembership.INSIDE.value and v.helmet_state == "NON_COMPLIANT" for v in person_rows
     )
     vest_violation = any(v.vest_state == "NON_COMPLIANT" for v in person_rows)
+    restricted_zone_violation = any(v.restricted_zone_membership == ZoneMembership.INSIDE.value for v in person_rows)
 
     return RiskInputs(
         current_co2_ppm=current_ppm,
@@ -82,6 +124,7 @@ def build_risk_inputs(session: Session, forecast: ForecastRow, exposure: dict, z
         niosh_idlh_ppm=settings.niosh_idlh_ppm,
         helmet_violation_overhead=helmet_violation,
         vest_violation_mandatory_zone=vest_violation,
+        restricted_zone_violation=restricted_zone_violation,
         sensor_unreliable=False,
         camera_degraded=camera_degraded,
     )
@@ -94,6 +137,7 @@ def upsert_incident(session: Session, decision: RiskDecision, zone_id: str, gas:
 
     if existing is not None:
         changed = existing.severity != decision.severity.value or existing.type != decision.incident_type.value
+        escalated = changed and _SEVERITY_RANK.get(decision.severity.value, 0) > _SEVERITY_RANK.get(existing.severity, 0)
         existing.type = decision.incident_type.value
         existing.severity = decision.severity.value
         existing.confidence = confidence
@@ -128,6 +172,9 @@ def upsert_incident(session: Session, decision: RiskDecision, zone_id: str, gas:
                 )
             )
         session.commit()
+        if escalated:
+            _maybe_capture_evidence_image(session, existing, zone_id, now, "SEVERITY_ESCALATED")
+            session.commit()
         return existing, False
 
     row = IncidentRow(
@@ -163,6 +210,8 @@ def upsert_incident(session: Session, decision: RiskDecision, zone_id: str, gas:
             correlation_id=None,
         )
     )
+    session.commit()
+    _maybe_capture_evidence_image(session, row, zone_id, now, "CREATED")
     session.commit()
     return row, True
 

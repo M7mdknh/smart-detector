@@ -4,6 +4,88 @@ Generated as part of the final submission-readiness audit (2026-08-29). Lists wh
 reviewer needs to find in this repository and what it takes to run it. See
 `docs/FINAL_VERIFICATION.md` for the verification evidence behind these numbers.
 
+## v2.0 changes (`assessment-submission-v2.0`, on top of `assessment-submission-v1.0`)
+
+`assessment-submission-v1.0` (commit `d2a3b88`, archive
+`factory-safety-sentinel-submission-v1.0.tar.gz`, sha256
+`07ad21e9263ad7b6887898b4c6599d3961fa682de51e746a6e22e21fb1ad9644`) is
+untouched — no rewrite, move, or retag. Everything below is new commits on
+top of it.
+
+This release deliberately does **not** include the "vision-enhanced v2.0"
+work originally requested in full (a two-stage YOLO architecture, ~8
+externally sourced PPE datasets, retrained/benchmarked YOLO11n/11s
+candidates, and a licensed continuous "interview" video). That work requires
+a GPU, dataset-provider credentials, and human legal review of video
+licensing, none of which are available to an agent in this sandbox. Per an
+explicit scope-down decision, this release ships only what is genuinely
+executable, and defers the rest as a specification — see
+`docs/adr/0002-vision-v2-roadmap.md`.
+
+What v2.0 actually ships:
+
+1. **Clean-environment dependency/test split.** `make setup` now installs
+   lean application dependencies only (`requirements.txt` — no
+   torch/ultralytics/opencv); `make setup-vision` layers
+   `requirements-vision.txt` on top. `make test` passes with 0 failures in
+   both environments (vision-only tests skip via `pytest.importorskip` in a
+   lean env, run for real when vision deps are present). New `make
+   test-vision` and `make test-full` targets fail loudly instead of skipping
+   when vision deps are missing, since both explicitly mean "run vision for
+   real." One previously-failing lean-env test
+   (`test_predict_with_non_finite_model_output_falls_back` in
+   `backend/tests/test_forecast_gru.py`) was fixed with a proper
+   `pytest.importorskip("torch")` guard — it exercises a code path that
+   itself calls `import torch` unconditionally, so it never genuinely
+   ran without torch; it now correctly skips instead of failing.
+2. **Restricted-zone intrusion detection.** A third configurable zone TYPE
+   (`RESTRICTED`), reusing the existing polygon/box-membership +
+   foot-point + dwell-timer mechanism used for the gas-exposure and
+   overhead-work zones (no new YOLO class). New `IncidentType.PERSON_IN_RESTRICTED_ZONE`
+   / reason code `PERSON_IN_RESTRICTED_ZONE`, severity `HIGH`. See
+   `backend/app/inference/zone_config.json` (new `restricted-zone` polygon),
+   `backend/app/services/vision_ground_truth.py` (`RESTRICTED_ZONE_BOX`,
+   the path that actually drives simulator incidents),
+   `backend/app/inference/vision_worker_impl.py` (CV replay path, for
+   consistency), `backend/app/domain/risk/policy.py`,
+   `backend/app/services/incident_service.py`, and
+   `backend/tests/test_restricted_zone.py` (5 tests: polygon membership,
+   dwell timing on both the CV-replay and ground-truth paths, incident
+   creation, dedup).
+3. **Incident evidence images and reports.** One annotated evidence
+   snapshot per newly opened/escalated vision-derived incident (never per
+   frame) — see `backend/app/services/evidence_image.py` for the honesty
+   rationale (these incidents are ground-truth-driven with no real
+   correlated camera frame, so the image is a labelled schematic
+   reconstruction from the same evidence data, never presented as an
+   unlabelled camera capture). New `incident_evidence_images` table
+   (Alembic revision `a1c2e4f5b678`), `GET
+   /api/v1/incidents/{id}/evidence` (safe by-ID file serving, typed 404s),
+   `GET /api/v1/incidents/{id}/report.json`, and `GET
+   /api/v1/incidents/{id}/report.csv`. Minimal frontend wiring in
+   `frontend/src/dashboard/ReviewDrawer.tsx` (evidence thumbnails + report
+   download buttons). See `backend/tests/test_incident_evidence_images.py`
+   (8 tests).
+4. **Duplicate weight cleanup.** `models/artifacts/ppe-yolo11n-v1.1.pt`
+   (byte-identical, `sha256=a6b5aedc...`, to the registered
+   `ppe-yolo11n.pt`, unreferenced anywhere) was removed after grepping the
+   whole repo for references. See `docs/ACCEPTANCE_RESULTS.md` E04.
+5. **Dataset-preparation tooling scaffold (input-less until real data
+   arrives).** `backend/scripts/vision_data/{prepare_vision_data,audit_vision_data,check_vision_leakage}.py`
+   plus `make prepare-vision-data` / `make audit-vision-data` / `make
+   check-vision-leakage`, exercised against synthetic fixtures under
+   `backend/tests/fixtures/vision_data_sample/` (`backend/tests/test_vision_data_tooling.py`,
+   11 tests) — proves the tooling logic works, not that any real external
+   dataset has been validated.
+6. **`make interview-demo` guard.** Fails immediately with guidance
+   (`make setup-vision`, then `docs/INTERVIEW_DEMO.md`) rather than running
+   a fake slideshow in place of real continuous video, since none was
+   acquired.
+7. **`docs/adr/0002-vision-v2-roadmap.md`** — the deferred two-stage
+   architecture proposal, the 8 named external datasets' proposed class
+   mappings (none downloaded/audited/trained on), and the interview-video
+   acquisition checklist.
+
 ## Required source directories
 
 | Directory | Contents |

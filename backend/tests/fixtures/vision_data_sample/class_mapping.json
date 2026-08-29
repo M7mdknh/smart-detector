@@ -1,0 +1,6 @@
+{
+  "hardhat": "helmet",
+  "no-hardhat": "no_helmet",
+  "vest": "vest",
+  "head": "person"
+}

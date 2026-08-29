@@ -658,6 +658,118 @@
         "summary": "Incident Audit"
       }
     },
+    "/api/v1/incidents/{incident_id}/evidence": {
+      "get": {
+        "description": "Serves the most recent annotated evidence image for this incident, looked\nup strictly by incident ID -- never a client-supplied filesystem path. 404 if\nthe incident has no captured evidence, or if the file is missing on disk.",
+        "operationId": "get_incident_evidence_api_v1_incidents__incident_id__evidence_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "incident_id",
+            "required": true,
+            "schema": {
+              "title": "Incident Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Incident Evidence"
+      }
+    },
+    "/api/v1/incidents/{incident_id}/report.csv": {
+      "get": {
+        "operationId": "get_incident_report_csv_api_v1_incidents__incident_id__report_csv_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "incident_id",
+            "required": true,
+            "schema": {
+              "title": "Incident Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Incident Report Csv"
+      }
+    },
+    "/api/v1/incidents/{incident_id}/report.json": {
+      "get": {
+        "operationId": "get_incident_report_json_api_v1_incidents__incident_id__report_json_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "incident_id",
+            "required": true,
+            "schema": {
+              "title": "Incident Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Incident Report Json"
+      }
+    },
     "/api/v1/sensor-readings": {
       "post": {
         "operationId": "post_sensor_reading_api_v1_sensor_readings_post",

@@ -1,0 +1,5 @@
+{
+  "dataset_a/images/img001.jpg": "train",
+  "dataset_a/images/img002.jpg": "val",
+  "dataset_a/images/img003.jpg": "train"
+}

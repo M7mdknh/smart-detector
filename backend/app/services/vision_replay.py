@@ -47,6 +47,7 @@ def get_replay_status(session: Session) -> dict:
                 "confidence": r.confidence, "bbox": [r.bbox_x1, r.bbox_y1, r.bbox_x2, r.bbox_y2],
                 "helmet_state": r.helmet_state, "vest_state": r.vest_state,
                 "gas_zone_membership": r.gas_zone_membership, "overhead_zone_membership": r.overhead_zone_membership,
+                "restricted_zone_membership": r.restricted_zone_membership,
                 "event_time": r.event_time,
             }
             for r in rows

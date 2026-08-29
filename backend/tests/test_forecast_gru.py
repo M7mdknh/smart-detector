@@ -147,6 +147,13 @@ def test_predict_with_wrong_input_shape_falls_back():
 
 
 def test_predict_with_non_finite_model_output_falls_back(monkeypatch):
+    # predict() itself does `import torch` whenever self._model is not None (real
+    # usage never hits this in a lean/no-torch env because the loader leaves
+    # _model=None and returns "model_unavailable" first) -- this test exercises
+    # the non-None-model "invalid_output" branch specifically, which genuinely
+    # requires torch to reach. Skip (not fail) when torch isn't installed.
+    pytest.importorskip("torch", reason="torch not installed (backend/requirements-vision.txt)")
+
     class _NaNModel:
         def __call__(self, x):
             import torch

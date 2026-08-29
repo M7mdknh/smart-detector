@@ -1,5 +1,6 @@
-.PHONY: setup demo demo-stop test e2e train-sensor train-vision build-replay evaluate lint clean \
-	generate-api check-api-types train-forecast evaluate-forecast tune-ppe-thresholds guided-demo evaluate-natural-motion
+.PHONY: setup setup-vision demo demo-stop test test-vision test-full e2e train-sensor train-vision build-replay evaluate lint clean \
+	generate-api check-api-types train-forecast evaluate-forecast tune-ppe-thresholds guided-demo evaluate-natural-motion \
+	prepare-vision-data audit-vision-data check-vision-leakage interview-demo
 
 BACKEND=backend
 VENV=$(BACKEND)/.venv
@@ -9,16 +10,21 @@ PIP=$(VENV)/bin/pip
 setup:
 	python3.12 -m venv $(VENV) || python3 -m venv $(VENV)
 	$(PIP) install --quiet --upgrade pip
-	# requirements-vision.txt pulls in requirements.txt plus ultralytics/opencv/torch --
-	# without it, `make demo`'s camera and GRU forecast would silently run degraded even
-	# on a machine that could run them, failing the Definition of Done's real-CV-inference
-	# and hybrid-forecast requirements. Both models still degrade honestly if this install
-	# is skipped or fails offline; this is what makes them actually available by default.
-	$(PIP) install --quiet -r $(BACKEND)/requirements-vision.txt
+	# Lean application dependencies only (requirements.txt: FastAPI/SQLAlchemy/NumPy/
+	# pandas/scikit-learn/XGBoost/Pillow -- no torch/ultralytics/opencv). `make demo`
+	# still runs completely on this install alone: the PPE detector and GRU residual
+	# forecast degrade honestly to MODEL_UNAVAILABLE/physics-only (CLAUDE.md "safe
+	# fallback"), never silently or unsafely. Run `make setup-vision` afterwards for
+	# real CV inference and the hybrid GRU forecast.
+	$(PIP) install --quiet -r $(BACKEND)/requirements.txt
 	cd frontend && npm install --silent
 	mkdir -p $(BACKEND)/data
 	cd $(BACKEND) && ../$(PY) -m alembic upgrade head
-	@echo "Setup complete. Run 'make demo' to start the application."
+	@echo "Setup complete (lean). Run 'make setup-vision' for real CV/GRU inference, or 'make demo' to start now in degraded/fallback mode."
+
+setup-vision:
+	$(PIP) install --quiet -r $(BACKEND)/requirements-vision.txt
+	@echo "Vision/GRU dependencies installed (torch/ultralytics/opencv). 'make demo' will now run real CV inference and the hybrid forecast."
 
 demo: demo-stop
 	mkdir -p $(BACKEND)/data
@@ -47,6 +53,26 @@ demo-stop:
 	-rm -f /tmp/sentinel-backend.pid /tmp/sentinel-frontend.pid
 
 test:
+	# Runs cleanly in a lean (no torch/ultralytics) install: optional vision/GRU-only
+	# tests skip via pytest.importorskip rather than failing. 0 failures is required
+	# here regardless of which optional deps happen to be installed.
+	cd $(BACKEND) && .venv/bin/python -m pytest -q
+	cd frontend && npm test -- --run
+
+test-vision:
+	# Vision-dependent tests only, run for real -- fails loudly (not skips) if
+	# torch/ultralytics/opencv aren't installed, since this target is explicitly
+	# about exercising the real detector/GRU paths. Run 'make setup-vision' first.
+	@$(PY) -c "import torch, ultralytics" || \
+		(echo "ERROR: vision dependencies not installed. Run 'make setup-vision' first." && exit 1)
+	cd $(BACKEND) && .venv/bin/python -m pytest -q tests/test_vision_e2e.py tests/test_vision_model_availability.py tests/test_forecast_gru.py tests/test_gru_train_serve_parity.py -v
+
+test-full:
+	# Complete backend + frontend suite with vision deps required (no skips
+	# allowed) -- fails loudly if vision deps are missing, since "full" implies
+	# everything runs for real. Run 'make setup-vision' first.
+	@$(PY) -c "import torch, ultralytics" || \
+		(echo "ERROR: vision dependencies not installed. Run 'make setup-vision' first." && exit 1)
 	cd $(BACKEND) && .venv/bin/python -m pytest -q
 	cd frontend && npm test -- --run
 
@@ -75,6 +101,34 @@ evaluate-forecast:
 
 tune-ppe-thresholds:
 	cd $(BACKEND) && .venv/bin/python scripts/tune_ppe_thresholds.py
+
+prepare-vision-data:
+	# Prepares manifest(s) for manually-downloaded, already-licensed dataset
+	# folders under INPUT_DIR (no network calls). Empty/absent by default in
+	# this sandbox -- prints a clear message and exits 0. See
+	# docs/adr/0002-vision-v2-roadmap.md.
+	cd $(BACKEND) && .venv/bin/python scripts/vision_data/prepare_vision_data.py --input-dir "$(INPUT_DIR)" --output models/training/vision_manifests
+
+audit-vision-data:
+	# Exact/near-duplicate detection, class balance, and missing/corrupt
+	# annotation checks against a manifest produced by prepare-vision-data.
+	cd $(BACKEND) && .venv/bin/python scripts/vision_data/audit_vision_data.py --manifest "$(MANIFEST)" --dataset-root "$(INPUT_DIR)"
+
+check-vision-leakage:
+	# Verifies no exact/near-duplicate or same-scene-group image crosses a
+	# train/val/test split boundary. Exits non-zero on any leak found.
+	cd $(BACKEND) && .venv/bin/python scripts/vision_data/check_vision_leakage.py --manifest "$(MANIFEST)" --splits "$(SPLITS)" --dataset-root "$(INPUT_DIR)"
+
+interview-demo:
+	# Guard-only target: no genuinely licensed continuous "interview" video has
+	# been acquired in this project (see docs/adr/0002-vision-v2-roadmap.md).
+	# Refuses to run rather than faking a slideshow demo as if it were
+	# continuous video.
+	@$(PY) -c "import torch, ultralytics" || \
+		(echo "ERROR: vision dependencies not installed. Run 'make setup-vision' first." && exit 1)
+	@test -f demo-assets/interview_compilation_source.mp4 || \
+		(echo "ERROR: demo-assets/interview_compilation_source.mp4 not found. See docs/INTERVIEW_DEMO.md for how to add real licensed footage; this target intentionally refuses to run a fake slideshow in its place." && exit 1)
+	@echo "Prerequisites present -- see docs/INTERVIEW_DEMO.md for the intended run sequence."
 
 guided-demo:
 	cd $(BACKEND) && .venv/bin/python scripts/guided_demo.py

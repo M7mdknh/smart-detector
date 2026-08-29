@@ -32,6 +32,7 @@ class VisionEvidence(BaseModel):
     vest_state: PpeState = PpeState.UNKNOWN
     gas_zone_membership: ZoneMembership = ZoneMembership.UNKNOWN
     overhead_zone_membership: ZoneMembership = ZoneMembership.UNKNOWN
+    restricted_zone_membership: ZoneMembership = ZoneMembership.UNKNOWN
     dwell_seconds: float | None = None
 
 

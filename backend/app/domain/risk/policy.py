@@ -29,6 +29,7 @@ class RiskInputs:
     vest_violation_mandatory_zone: bool
     sensor_unreliable: bool
     camera_degraded: bool
+    restricted_zone_violation: bool = False
 
 
 @dataclass(frozen=True)
@@ -135,6 +136,16 @@ def evaluate_ppe_risk(i: RiskInputs) -> list[RiskDecision]:
                 Severity.MEDIUM,
                 ["PPE_VEST_VIOLATION"],
                 "Missing high-visibility vest persisted in a mandatory-PPE zone.",
+                DEFAULT_RECOMMENDATION,
+            )
+        )
+    if i.restricted_zone_violation:
+        decisions.append(
+            RiskDecision(
+                IncidentType.PERSON_IN_RESTRICTED_ZONE,
+                Severity.HIGH,
+                ["PERSON_IN_RESTRICTED_ZONE"],
+                "A tracked worker's foot point dwelled inside the configured restricted zone.",
                 DEFAULT_RECOMMENDATION,
             )
         )
