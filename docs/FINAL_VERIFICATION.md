@@ -391,18 +391,27 @@ called out in this audit except that it cannot help with the two personal-path l
 above (those are inside tracked documentation/JSON content, not filenames a gitignore pattern
 can catch).
 
-### No `.git` directory
+### No `.git` directory — FIXED this pass, see `docs/SUBMISSION_MANIFEST.md`
 
-`ls -la /home/muhammad/Documents/smart-detector/.git` fails with "No such file or directory" —
-this project is **not currently a git repository**. `git init` was **not** run (per
-instructions). Recommendation: `git init` followed by `git add -A && git commit` using the
-existing `.gitignore` would be sufficient to produce a clean history, *provided* the cleanup
-in this report (removed `sentinel.db`/caches, redacted personal paths) is done first — since
-none of that content is currently tracked anywhere, a fresh `git init` right now would start
-from exactly the clean state verified above. If the submission is instead handed over as a
-plain folder/zip copy rather than a git clone/archive, the `.gitignore` provides no protection
-at all (it only filters `git add`), so the same manual cleanup (delete `.venv`,
-`node_modules`, `dist`, any `.db`/cache files) must be done by hand before zipping.
+**Status update (this pass):** `git init` has now been run at the repository root, the
+`.gitignore` allowlist bug that would have silently dropped the GRU/PPE-v1.0/v1.1 artifacts
+was found and fixed, everything was committed, and the commit was tagged
+`assessment-submission-v1.0`. A `git archive` of that tag was built, extracted into a fresh
+temp directory, and re-verified end to end (`make setup`, `make test`, a `make demo` smoke
+test) from the extracted copy. See `docs/SUBMISSION_MANIFEST.md`'s "Git history and submission
+archive" section for the commit hash, tag, archive size/sha256, tracked-file count, and the
+extraction-verification results. The original finding below (from the pre-`git init` pass) is
+kept verbatim as the historical record.
+
+**Original finding (historical):** `ls -la /home/muhammad/Documents/smart-detector/.git`
+failed with "No such file or directory" — this project was **not** a git repository at the
+time. `git init` was **not** run (per that pass's instructions). Recommendation:
+`git init` followed by `git add -A && git commit` using the existing `.gitignore` would be
+sufficient to produce a clean history, *provided* the cleanup in this report (removed
+`sentinel.db`/caches, redacted personal paths) is done first. If the submission is instead
+handed over as a plain folder/zip copy rather than a git clone/archive, the `.gitignore`
+provides no protection at all (it only filters `git add`), so the same manual cleanup (delete
+`.venv`, `node_modules`, `dist`, any `.db`/cache files) must be done by hand before zipping.
 
 ## Hygiene fixes applied during this audit
 

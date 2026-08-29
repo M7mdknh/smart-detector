@@ -96,10 +96,50 @@ CORS origins (backend default, `backend/app/settings.py`): `http://localhost:517
 `http://127.0.0.1:5173`. `docker-compose.yml` overrides `SENTINEL_CORS_ORIGINS` to also
 include `http://localhost:8080` and `http://127.0.0.1:8080` for the containerized frontend.
 
+## Git history and submission archive
+
+Produced in the final correction pass (2026-08-29), after the working tree had no `.git`
+directory at all in every prior pass. `.gitignore` was hardened first (PID files, coverage
+output, Playwright artifacts, downloaded-dataset directories, `backend/runs/` — Ultralytics'
+own generated validation plots that had leaked into an untracked-until-now state — and,
+importantly, the model-artifact allowlist was widened: it previously excluded the GRU
+artifacts and both PPE-detector version files entirely via `models/artifacts/*`, which would
+have silently dropped required, checksum-verified artifacts from the archive).
+
+- **Commit**: `1ae6e560504025daba53c0c08577c800c6b23f7d`
+- **Tag**: `assessment-submission-v1.0` (annotated, points to the commit above)
+- **Tracked files**: 198 (`git ls-files | wc -l`)
+- **Archive**: `factory-safety-sentinel-submission-v1.0.tar.gz`, built with
+  `git archive --format=tar.gz -o <path> assessment-submission-v1.0` (so it contains exactly
+  the tracked-file tree, nothing gitignored)
+  - **Size**: 41,725,550 bytes (~39.8 MiB)
+  - **SHA-256**: `9757267ddfd83d9d811b455edc61aa1905e76a0558c0b140d2681fac74f89820`
+- **Extraction verification**: extracted into a fresh temp directory; confirmed all 7 model
+  artifacts present with sha256 matching `models/registry.json` exactly (leak classifier, PPE
+  detector v1.1 + v1.0 + the unversioned-name duplicate, GRU weights + scaler + feature
+  schema); confirmed `docs/`, `backend/tests/` (20 test files), `backend/alembic/versions/`,
+  `frontend/src/api/generated/schema.ts`, `Makefile`, `docker-compose.yml`,
+  `backend/Dockerfile`, `frontend/Dockerfile`, and `scenarios/README.md` (added this pass so
+  the intentionally-empty `scenarios/` directory survives archival — git does not track empty
+  directories) all present. Ran `make setup` (lean, `requirements.txt` only — see the disk-
+  quota note below for why the full `requirements-vision.txt` extras couldn't also be
+  reinstalled a third time in this pass), `make test` (103 passed / 3 skipped / 1
+  torch-absent-only failure, consistent with every other lean-venv run in this pass — see
+  `docs/FINAL_VERIFICATION.md`), and a `make demo` smoke test (start → `health/ready` and
+  `system/status` both 200 → `make demo-stop` → no orphan `uvicorn`/`vite` processes) directly
+  from the extracted archive. All passed.
+- **What the archive deliberately excludes** (all gitignored, confirmed via `git status
+  --porcelain --untracked-files=all` before committing): `backend/.venv/`,
+  `frontend/node_modules/`, `frontend/dist/`, `__pycache__/`, `.pytest_cache/`, local
+  `*.db`/`*.sqlite*` files, `.env*` (except `.env.example`), logs, PID files, coverage output,
+  Playwright artifacts, and `backend/runs/` (generated Ultralytics validation plots).
+
 ## Setup / runtime requirements
 
 - **Python**: 3.12 (`make setup` invokes `python3.12` specifically, falling back to
-  `python3`). Verified present via `pyenv` (`3.12.11`) in the audit environment.
+  `python3`; a root `.python-version` pinning `3.12.11` was added this pass so `pyenv`
+  resolves `python3.12` on a fresh clone without a manual `pyenv shell`/`PYENV_VERSION`).
+  Verified present via `pyenv` (`3.12.11`) in the audit environment.
 - **Node.js**: repo was verified against Node `v24.18.0` / npm `11.16.0` in this environment;
   no `.nvmrc`/`engines` field was found pinning an exact version.
 - **Disk space**: a full `make setup` (including `requirements-vision.txt` — torch,
