@@ -100,7 +100,8 @@ def main():
     cap.release()
     writer.release()
     elapsed = time.monotonic() - t0
-    print(f"Processed {frame_id} frames in {elapsed:.1f}s ({frame_id / max(elapsed, 1e-6):.1f} fps)")
+    achieved_fps = frame_id / max(elapsed, 1e-6)
+    print(f"Processed {frame_id} frames in {elapsed:.1f}s ({achieved_fps:.1f} fps)")
     print(f"Detection summary: {detections_summary}")
 
     # mp4v (OpenCV's fourcc) is not always browser/GitHub-preview friendly; re-mux to
@@ -113,6 +114,27 @@ def main():
     )
     tmp_out.unlink()
     print(f"Wrote {OUT_PATH}")
+
+    import hashlib
+    import json
+
+    report_path = REPO_ROOT / "models" / "evaluation" / "interview_video_detection_summary.json"
+    report = {
+        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "model_used": model_version,
+        "source_path": str(SOURCE_PATH.relative_to(REPO_ROOT)),
+        "source_sha256": hashlib.sha256(SOURCE_PATH.read_bytes()).hexdigest(),
+        "output_path": str(OUT_PATH.relative_to(REPO_ROOT)),
+        "n_frames_processed": frame_id,
+        "processing_fps_this_machine": achieved_fps,
+        "frames_with_person_detection": detections_summary["frames_with_person"],
+        "frames_with_helmet_detection": detections_summary["frames_with_helmet_detection"],
+        "frames_with_no_helmet_detection": detections_summary["frames_with_no_helmet_detection"],
+        "frames_with_vest_detection": detections_summary["frames_with_vest_detection"],
+        "note": "Real-time detector run against the genuine interview-compilation source video at the registered runtime confidence thresholds (backend/app/inference/ppe_thresholds.json) -- no threshold was lowered for this clip. frames_with_no_helmet_detection=0 is a real, disclosed finding (see demo-assets/INTERVIEW_VIDEO_SOURCES.md): the no_helmet class does not clear its 0.05 threshold anywhere in this clip even though a bare-headed worker is genuinely visible; PPE_HELMET_OVERHEAD_VIOLATION incidents observed live instead fire via the 'no positive helmet evidence while in the overhead zone' policy path, not this class directly.",
+    }
+    report_path.write_text(json.dumps(report, indent=2))
+    print(f"Wrote {report_path}")
 
 
 if __name__ == "__main__":

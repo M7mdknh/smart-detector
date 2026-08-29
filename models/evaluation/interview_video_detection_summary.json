@@ -1,0 +1,14 @@
+{
+  "generated_at": "2026-08-29T17:16:48Z",
+  "model_used": "ppe-yolo11n-1.1",
+  "source_path": "demo-assets/interview_compilation_source.mp4",
+  "source_sha256": "9f7c042686bc3f01fe2717987c8ec88b254cdaa40498d4ba61c7b53501acd381",
+  "output_path": "demo-assets/interview_compilation_annotated.mp4",
+  "n_frames_processed": 527,
+  "processing_fps_this_machine": 49.38318280820933,
+  "frames_with_person_detection": 354,
+  "frames_with_helmet_detection": 143,
+  "frames_with_no_helmet_detection": 0,
+  "frames_with_vest_detection": 401,
+  "note": "Real-time detector run against the genuine interview-compilation source video at the registered runtime confidence thresholds (backend/app/inference/ppe_thresholds.json) -- no threshold was lowered for this clip. frames_with_no_helmet_detection=0 is a real, disclosed finding (see demo-assets/INTERVIEW_VIDEO_SOURCES.md): the no_helmet class does not clear its 0.05 threshold anywhere in this clip even though a bare-headed worker is genuinely visible; PPE_HELMET_OVERHEAD_VIOLATION incidents observed live instead fire via the 'no positive helmet evidence while in the overhead zone' policy path, not this class directly."
+}
