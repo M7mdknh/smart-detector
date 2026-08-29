@@ -6,5 +6,5 @@
   "n_crossing_comparisons": 6,
   "crossing_time_mae_minutes": 20.339847774324245,
   "note": "Physics forecast is deterministic given (V, Cin, Q, G); this reports forecast error against the sensor-noise-perturbed generated trajectory under piecewise-constant controls, not against real-world data (no real deployment data exists for this synthetic prototype).",
-  "generated_at": "2026-08-29T10:34:37Z"
+  "generated_at": "2026-08-29T22:23:39Z"
 }

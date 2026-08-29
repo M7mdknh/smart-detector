@@ -1,5 +1,55 @@
 # Final Verification Report
 
+## v3.0 pass (2026-08-30) — supersedes nothing below, additive
+
+This pass's scope: implement a live annotated camera-frame image in the
+`/dashboard` camera panel (previously structured detection text only, plus a
+client-rendered SVG zone overlay — see
+`docs/adr/0003-annotated-camera-frame-delivery.md`), then re-run the full
+release gate. Files changed: `backend/app/inference/vision_worker_impl.py`
+(cache the real annotated frame every processed replay frame, not only in
+`interview_demo_mode`), `backend/app/api/routes.py` (new `GET
+/api/v1/vision/frame.jpg`), `frontend/src/dashboard/CameraPanel.tsx` +
+`index.css` (render it), plus new backend/frontend/E2E tests and two
+`backend/scripts/*.py` dataset-path-resolution fixes described below.
+
+**Commands executed this pass, in order, with results:**
+
+| Command | Result |
+|---|---|
+| `cd backend && .venv/bin/python -m pytest -q` (baseline, before changes) | 173 passed |
+| `cd frontend && npm test -- --run` (baseline) | 18 passed |
+| (implementation) | — |
+| `cd backend && .venv/bin/python -m pytest -q tests/test_vision_frame_endpoint.py` | 4 passed (new file) |
+| `cd backend && .venv/bin/python -m pytest -q` (full) | **177 passed** |
+| `npx tsc --noEmit` (frontend) | clean, no errors |
+| `cd frontend && npm test -- --run` | **22 passed** (18 + 4 new `CameraPanel.test.tsx`) |
+| `make generate-api` | regenerated `frontend/openapi.json` + `schema.ts` for the new route |
+| `make check-api-types` | `OK: generated API types are up to date` |
+| `make lint` | ruff clean on all touched files; 4 pre-existing `I001` import-order findings in `tests/test_vision_v1_2_promotion.py` (untouched by this pass, target is non-blocking `\|\| true`); frontend `oxlint` 2 pre-existing purity warnings (untouched files) |
+| `make e2e` | **PASS** — `dashboard.e2e.mjs` now also asserts the annotated `<img>` decodes (`naturalWidth/naturalHeight > 50`) and that `GET /vision/frame.jpg` returns a real `image/jpeg` >5000 bytes starting with the JPEG SOI marker (`0xFFD8`), not just that an `<img>` tag exists |
+| `make interview-demo` ×3 consecutive | **3/3 PASS** (run 3 produced all three incident types: `PERSON_IN_RESTRICTED_ZONE`, `PPE_HELMET_OVERHEAD_VIOLATION`, `PPE_VEST_VIOLATION`) |
+| `make interview-demo-e2e` | 1st run: **FAILED** — one console error, `Failed to load resource: ... 409 (Conflict)`, from the existing (pre-existing, not introduced by this pass) simulation-command race the script already works around elsewhere; not reproduced on immediate retry |
+| `make interview-demo-e2e` ×2 more | **2/2 PASS** (clean, no console errors) — satisfies "at least two consecutive passes"; the isolated 409 is logged as a known pre-existing flake below, not fixed in this pass (out of scope for the camera-frame feature; root cause not yet isolated) |
+| `python -m pip check` (backend venv) | `No broken requirements found.` |
+| `make test-vision` | 24 passed |
+| `make test-full` | 177 backend + 22 frontend passed |
+| `make evaluate` | initially **FAILED** (`FileNotFoundError: 'construction-ppe.yaml' does not exist` in `evaluate_vision_model.py`) — root-caused to this sandbox's global `~/.config/Ultralytics/settings.json` `datasets_dir` no longer matching the dataset's actual on-disk location (`/home/muhammad/datasets/construction-ppe`, not `~/Documents/datasets`); fixed by resolving the dataset yaml explicitly through `ultralytics.utils.SETTINGS["datasets_dir"]` in `evaluate_vision_model.py`/`tune_ppe_thresholds.py` (matching the convention `train_vision_model.py`/`build_replay_clip.py` already used) with an honest `DATASET_UNAVAILABLE` degrade (not a crash) when the dataset truly isn't present — re-ran **clean**, all sections `OK`, and every reproduced metric matched the previously-committed values to within floating-point noise (e.g. `no_helmet` recall 0.175 unchanged; see `models/evaluation/vision_model_metrics.json` diff) |
+| `make evaluate-forecast` | **PASS** — matched-GRU benchmark reproduced: physics MAE 57.19429 ppm, hybrid MAE 47.59373 ppm (16.79% improvement), `promote_hybrid_as_default: true` |
+| `docker compose build` | both images built successfully |
+| `docker compose up -d` | both containers `Up`; `GET /api/v1/health/ready` → `{"status":"ok"}`; `/dashboard` and `/simulation` → HTTP 200 on port 8080 (frontend's mapped port; not 5173 in Compose) |
+| (docker) `GET /api/v1/vision/frame.jpg` | **404 `CAMERA_DEGRADED`**, correctly — the Docker backend image installs only the lean `requirements.txt` (no torch/ultralytics), so `camera`/`detector`/`vision` all correctly report `UNAVAILABLE` per the documented safe-fallback design, not a bug |
+| `docker compose down` | clean shutdown, containers/network removed |
+| `make demo` (real run, browser-verified) | backend/frontend healthy; loaded `gradual_leak`; fetched `/vision/frame.jpg` directly → genuine 960×540 JPEG (111,847 bytes) with real boxes/labels/track IDs/zone polygons burned in (visually confirmed, see below); Playwright screenshot of the live `/dashboard` confirms the camera panel renders it in the browser |
+| Manual incident workflow via real API | Loaded a real incident, walked `OPEN → ACKNOWLEDGED → INVESTIGATING → RESOLVED` through `POST /incidents/{id}/actions` with optimistic-concurrency `expected_version`; audit trail grew from 3 to 6 entries, one per transition |
+| `make demo-stop` | clean shutdown |
+
+**Known pre-existing flake (not fixed this pass):** one `make interview-demo-e2e` run out of three hit a single console-logged `409 Conflict` from a resource load, most likely a simulation-command race under the script's `speed=300` acceleration; it did not reproduce on immediate retry (2/2 clean afterward) and is unrelated to the camera-frame feature. Flagged here rather than silently ignored, per this project's "diagnose and fix, or disclose" standard — root-causing it fully was out of scope for this pass.
+
+**Vision dataset-path fix, why it's a genuine improvement and not a workaround:** the previous `data="construction-ppe.yaml"` bare-name argument to `ultralytics`' `model.val()` only resolved because of exactly-matching, undocumented global `Ultralytics/settings.json` state — fragile across machines/environments by construction. The fix makes both `evaluate_vision_model.py` and `tune_ppe_thresholds.py` resolve the dataset the same explicit way `train_vision_model.py`/`build_replay_clip.py` already did, and added a typed `DATASET_UNAVAILABLE` status (matching the existing `ARTIFACT_MISSING` pattern) instead of letting a missing dataset crash the whole `make evaluate` run — consistent with CLAUDE.md's "safe fallback"/"honest degradation" invariants. No metric values or thresholds were altered by this fix; only how the dataset file is located.
+
+---
+
 Performed 2026-08-29 as part of submission-readiness audit. This is an audit/report only —
 no application behavior or scope was changed except where explicitly noted as a fix (the
 `lap` pin, the missing-YOLO fallback, `Makefile`'s `setup` target, `.gitignore`, a

@@ -25,14 +25,46 @@ DATASET_CLASS_NAMES = ["helmet", "gloves", "vest", "boots", "goggles", "none", "
 RUNTIME_DATASET_IDS = {"helmet": 0, "vest": 2, "person": 6, "no_helmet": 7}
 
 
+def _resolve_construction_ppe_yaml() -> Path | None:
+    """Locates the (AGPL-3.0, credential-free-to-download-manually but never
+    bundled/committed here) Construction-PPE dataset the same way
+    scripts/train_vision_model.py and scripts/build_replay_clip.py do: under
+    Ultralytics' own `datasets_dir` setting, not a bare relative name (which
+    only resolves for datasets Ultralytics ships a bundled cfg/datasets/*.yaml
+    for -- this one isn't). A clean checkout without the dataset locally
+    placed genuinely cannot reproduce this section; that must degrade
+    honestly (DATASET_UNAVAILABLE below), not crash the whole `make evaluate`
+    run."""
+    from ultralytics.utils import SETTINGS
+
+    datasets_dir = Path(SETTINGS.get("datasets_dir", "."))
+    for candidate in (datasets_dir / "construction-ppe.yaml", datasets_dir / "construction-ppe" / "data.yaml"):
+        if candidate.exists():
+            return candidate
+    return None
+
+
 def detection_metrics() -> dict:
     from ultralytics import YOLO
 
     if not ARTIFACT_PATH.exists():
         return {"status": "ARTIFACT_MISSING", "detail": str(ARTIFACT_PATH)}
 
+    dataset_yaml = _resolve_construction_ppe_yaml()
+    if dataset_yaml is None:
+        return {
+            "status": "DATASET_UNAVAILABLE",
+            "detail": (
+                "construction-ppe dataset not found under Ultralytics datasets_dir "
+                f"({Path.home()}/... ; see docs/adr/0002-vision-v2-roadmap.md). The licensed "
+                "raw dataset is never bundled/committed to this repo, so a clean checkout "
+                "without it locally placed cannot reproduce this section -- physics/leak/"
+                "system sections above are unaffected."
+            ),
+        }
+
     model = YOLO(str(ARTIFACT_PATH))
-    metrics = model.val(data="construction-ppe.yaml", split="test", verbose=False)
+    metrics = model.val(data=str(dataset_yaml), split="test", verbose=False)
 
     per_class = {}
     for name, dataset_id in RUNTIME_DATASET_IDS.items():

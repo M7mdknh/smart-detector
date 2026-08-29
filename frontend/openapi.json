@@ -943,6 +943,23 @@
         "summary": "System Status"
       }
     },
+    "/api/v1/vision/frame.jpg": {
+      "get": {
+        "description": "Latest real annotated replay/camera frame (JPEG), for the dashboard\ncamera panel's live image. Reused from app/inference/frame_cache.py --\nthe same real detection+tracking run that produces VisionEvidence rows,\nnot a separate/second pipeline. 404 (not a blank/placeholder image) when\nno frame has been cached recently: camera/detector unavailable, or the\ncached frame aged out, must show as degraded, never as a fabricated safe\nscene. The frontend polls this endpoint on an interval (see\ndocs/adr/0003-annotated-camera-frame-delivery.md for why polling was\nchosen over MJPEG/WebSocket binary framing).",
+        "operationId": "vision_frame_api_v1_vision_frame_jpg_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Vision Frame"
+      }
+    },
     "/api/v1/vision/latest": {
       "get": {
         "operationId": "vision_latest_api_v1_vision_latest_get",

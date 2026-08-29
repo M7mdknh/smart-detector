@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-29T10:34:36Z",
+  "generated_at": "2026-08-29T22:23:39Z",
   "sections": {
     "physics": {
       "n_scenarios": 10,
@@ -9,7 +9,7 @@
       "n_crossing_comparisons": 6,
       "crossing_time_mae_minutes": 20.339847774324245,
       "note": "Physics forecast is deterministic given (V, Cin, Q, G); this reports forecast error against the sensor-noise-perturbed generated trajectory under piecewise-constant controls, not against real-world data (no real deployment data exists for this synthetic prototype).",
-      "generated_at": "2026-08-29T10:34:37Z",
+      "generated_at": "2026-08-29T22:23:39Z",
       "exit_code": 0
     },
     "leak_classifier": {
@@ -65,32 +65,32 @@
       "declared_hardware": "GPU: NVIDIA GeForce MX450",
       "detection_metrics": {
         "status": "OK",
-        "map50": 0.5590026465661242,
-        "map50_95": 0.2755361449491202,
+        "map50": 0.5619925212389494,
+        "map50_95": 0.2798898087973106,
         "per_class": {
           "helmet": {
-            "precision": 0.9230292517377621,
+            "precision": 0.9230293826604616,
             "recall": 0.9010416666666666,
-            "ap50": 0.9319977099277573,
-            "ap50_95": 0.5227948506419755
+            "ap50": 0.9361795281095755,
+            "ap50_95": 0.5343015431389417
           },
           "vest": {
-            "precision": 0.8378846466231077,
+            "precision": 0.8378845452617697,
             "recall": 0.8707865168539326,
-            "ap50": 0.8846922118367033,
-            "ap50_95": 0.5575070474882401
+            "ap50": 0.8883629156010242,
+            "ap50_95": 0.5662990798766361
           },
           "person": {
-            "precision": 0.7832745704086017,
+            "precision": 0.783274568450413,
             "recall": 0.809322033898305,
-            "ap50": 0.8332073190931832,
-            "ap50_95": 0.5106936890282978
+            "ap50": 0.8348706093055337,
+            "ap50_95": 0.51474592126531
           },
           "no_helmet": {
-            "precision": 0.3777103096178605,
+            "precision": 0.37771050501290476,
             "recall": 0.175,
-            "ap50": 0.2284980584847681,
-            "ap50_95": 0.08342220470717693
+            "ap50": 0.23138177941500065,
+            "ap50_95": 0.08554546943949418
           }
         },
         "person_recall": 0.809322033898305,
@@ -120,9 +120,9 @@
           "no_helmet": 94,
           "vest": 588
         },
-        "latency_ms_median": 11.08882899643504,
-        "latency_ms_p95": 12.562852003611624,
-        "achieved_fps": 87.83141069213521,
+        "latency_ms_median": 10.785161500280083,
+        "latency_ms_p95": 12.07762299964088,
+        "achieved_fps": 89.79697459595214,
         "note": "Measured by actually running the fine-tuned model against the bundled replay clip frame-by-frame on this machine's hardware, not a vendor benchmark."
       },
       "domain_gap_note": "Detection metrics are measured on the Construction-PPE test split (construction-site imagery), not a factory floor. Person/PPE recall figures here do not establish factory-deployment accuracy -- see docs/README.md's domain-gap limitations section.",
@@ -130,7 +130,7 @@
     },
     "system": {
       "exit_code": 0,
-      "summary_line": "19 passed in 4.33s",
+      "summary_line": "19 passed in 4.30s",
       "covers": [
         "incident dedup (repeated evidence updates one incident, not duplicates)",
         "incident workflow state machine + optimistic concurrency",

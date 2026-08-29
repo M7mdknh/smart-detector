@@ -159,6 +159,39 @@ def vision_latest(session: Annotated[Session, Depends(db_session)]):
     return get_replay_status(session)
 
 
+@router.get("/vision/frame.jpg")
+def vision_frame():
+    """Latest real annotated replay/camera frame (JPEG), for the dashboard
+    camera panel's live image. Reused from app/inference/frame_cache.py --
+    the same real detection+tracking run that produces VisionEvidence rows,
+    not a separate/second pipeline. 404 (not a blank/placeholder image) when
+    no frame has been cached recently: camera/detector unavailable, or the
+    cached frame aged out, must show as degraded, never as a fabricated safe
+    scene. The frontend polls this endpoint on an interval (see
+    docs/adr/0003-annotated-camera-frame-delivery.md for why polling was
+    chosen over MJPEG/WebSocket binary framing)."""
+    from datetime import datetime, timezone
+
+    from fastapi import Response
+
+    from app.inference.frame_cache import get_latest_frame
+    from app.services.vision_replay import CAMERA_ID
+
+    entry = get_latest_frame(CAMERA_ID, datetime.now(timezone.utc))
+    if entry is None:
+        raise ApiError("CAMERA_DEGRADED", "no recent annotated frame available", status_code=404)
+    jpeg_bytes, frame_id, event_time = entry
+    return Response(
+        content=jpeg_bytes,
+        media_type="image/jpeg",
+        headers={
+            "Cache-Control": "no-store",
+            "X-Frame-Id": str(frame_id),
+            "X-Event-Time": event_time.isoformat(),
+        },
+    )
+
+
 @router.get("/vision/zones")
 def vision_zones():
     """Authoritative, versioned camera-zone polygons (Phase 8) so the frontend

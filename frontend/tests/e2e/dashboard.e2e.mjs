@@ -42,6 +42,32 @@ async function main() {
   const co2Card = await page.locator(".card:has-text('CO2')").innerText();
   assert.match(co2Card, /ppm/, "CO2 card should show a real ppm value from the backend, not a placeholder");
 
+  // Camera panel: confirm a genuine, decodable annotated JPEG is rendered --
+  // not merely that an <img> tag exists. Waits for the real YOLO11n/ByteTrack
+  // replay worker (started unconditionally at app startup, see app/main.py)
+  // to cache its first frame (app/inference/frame_cache.py), then asserts
+  // both that the browser actually decoded a non-trivial image and that the
+  // raw bytes served by GET /vision/frame.jpg are a real, sizeable JPEG.
+  const frameImg = page.locator("img[alt*='Live annotated camera']");
+  await frameImg.waitFor({ state: "attached", timeout: 20000 });
+  await page.waitForFunction(
+    (sel) => {
+      const img = document.querySelector(sel);
+      return !!img && !img.hidden && img.complete && img.naturalWidth > 50 && img.naturalHeight > 50;
+    },
+    "img[alt*='Live annotated camera']",
+    { timeout: 20000 },
+  );
+  const frameSrc = await frameImg.getAttribute("src");
+  assert.ok(frameSrc, "annotated frame <img> should have a src pointing at the backend");
+  const frameRes = await fetch(new URL(frameSrc, API_BASE));
+  assert.equal(frameRes.status, 200, "GET /vision/frame.jpg should return the cached annotated frame");
+  assert.match(String(frameRes.headers.get("content-type")), /image\/jpeg/, "frame endpoint should serve a real JPEG");
+  const frameBytes = Buffer.from(await frameRes.arrayBuffer());
+  assert.ok(frameBytes.length > 5000, `expected a sizeable real JPEG, got ${frameBytes.length} bytes`);
+  assert.equal(frameBytes[0], 0xff, "JPEG magic byte 1");
+  assert.equal(frameBytes[1], 0xd8, "JPEG magic byte 2 (SOI marker)");
+
   await page.goto(`${APP_BASE}/simulation`, { waitUntil: "networkidle" });
   await page.waitForSelector("text=Playback", { timeout: 15000 });
   await page.waitForSelector("text=gradual_leak", { timeout: 15000 });

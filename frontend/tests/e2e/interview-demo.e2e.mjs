@@ -71,6 +71,26 @@ async function main() {
   // Camera panel: real detections, provenance always labelled CV_MODEL.
   await page.waitForSelector("text=source: CV_MODEL", { timeout: 15000 });
 
+  // Camera panel annotated frame: a genuine decodable JPEG from the real
+  // interview footage, not merely an <img> tag (see
+  // docs/adr/0003-annotated-camera-frame-delivery.md).
+  const frameImg = page.locator("img[alt*='Live annotated camera']");
+  await page.waitForFunction(
+    (sel) => {
+      const img = document.querySelector(sel);
+      return !!img && !img.hidden && img.complete && img.naturalWidth > 50 && img.naturalHeight > 50;
+    },
+    "img[alt*='Live annotated camera']",
+    { timeout: 20000 },
+  );
+  const frameSrc = await frameImg.getAttribute("src");
+  const frameRes = await fetch(new URL(frameSrc, API_BASE));
+  assert.equal(frameRes.status, 200, "GET /vision/frame.jpg should return a real frame during the interview demo");
+  const frameBytes = Buffer.from(await frameRes.arrayBuffer());
+  assert.ok(frameBytes.length > 5000, `expected a sizeable real JPEG, got ${frameBytes.length} bytes`);
+  assert.equal(frameBytes[0], 0xff, "JPEG magic byte 1");
+  assert.equal(frameBytes[1], 0xd8, "JPEG magic byte 2 (SOI marker)");
+
   // Incident table: the real incident just created via the API must appear
   // in the actual rendered table (not a value invented by the frontend).
   // IncidentTable renders each row's `explanation` text, not the raw `type`

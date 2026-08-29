@@ -4,6 +4,54 @@ Generated as part of the final submission-readiness audit (2026-08-29). Lists wh
 reviewer needs to find in this repository and what it takes to run it. See
 `docs/FINAL_VERIFICATION.md` for the verification evidence behind these numbers.
 
+## v3.0 changes (`assessment-submission-v3.0`, on top of `assessment-submission-v2.5`)
+
+`assessment-submission-v2.5` is untouched — no rewrite, move, or retag.
+Everything below is new commits on top of it. Scope: the one presentation-
+critical gap named for this pass — the `/dashboard` camera panel showed
+structured detection text only, never a real annotated frame image — plus a
+full re-run of the release gate (tests, e2e, evaluate, evaluate-forecast,
+docker compose) to confirm nothing regressed. Full command-by-command
+evidence is in `docs/FINAL_VERIFICATION.md`'s "v3.0 pass" section.
+
+**Files changed:**
+
+- `backend/app/inference/vision_worker_impl.py` — cache the real annotated
+  frame (`app/inference/frame_cache.py`) on every processed replay frame,
+  not only when `interview_demo_mode` is on. Incident-driving logic is
+  unchanged.
+- `backend/app/api/routes.py` — new `GET /api/v1/vision/frame.jpg`, serving
+  the cached JPEG or a typed 404 (`CAMERA_DEGRADED`), never a placeholder.
+- `frontend/src/dashboard/CameraPanel.tsx`, `frontend/src/index.css` — render
+  the live frame as an `<img>` polled once per second, alongside the
+  existing structured detection list and SVG zone-polygon fallback.
+- `backend/scripts/evaluate_vision_model.py`,
+  `backend/scripts/tune_ppe_thresholds.py` — dataset-path resolution fix
+  (explicit `Ultralytics SETTINGS["datasets_dir"]` lookup, honest
+  `DATASET_UNAVAILABLE` degrade) so `make evaluate` reproduces the vision
+  section reliably instead of depending on undocumented global Ultralytics
+  state; no metric values changed.
+- New tests: `backend/tests/test_vision_frame_endpoint.py` (4),
+  `frontend/tests/CameraPanel.test.tsx` (4); strengthened
+  `frontend/tests/e2e/dashboard.e2e.mjs` and
+  `frontend/tests/e2e/interview-demo.e2e.mjs` to assert a genuinely decoded,
+  real-byte-count JPEG, not just an `<img>` tag's presence.
+- New doc: `docs/adr/0003-annotated-camera-frame-delivery.md`.
+- Regenerated (no manual edits): `frontend/openapi.json`,
+  `frontend/src/api/generated/schema.ts` (new route),
+  `models/registry.json` (leak-classifier `created_at` timestamp only, same
+  sha256 — deterministic re-training), `models/evaluation/*.json`
+  (re-reproduced, values unchanged within floating-point noise).
+
+**Test counts:** backend 177/177 (173 baseline + 4 new), frontend 22/22 (18
+baseline + 4 new). `make e2e` and `make interview-demo-e2e` pass (see
+`docs/FINAL_VERIFICATION.md` for the one isolated, non-reproducing
+pre-existing flake encountered and disclosed, not silently retried away).
+`make interview-demo` passed 3/3 consecutive runs. `docker compose build/up/
+down` all succeed; the Docker image correctly runs in lean/degraded vision
+mode (camera/detector `UNAVAILABLE`) since its `Dockerfile` installs only
+`requirements.txt`, matching the documented lean-vs-vision split.
+
 ## v2.0 changes (`assessment-submission-v2.0`, on top of `assessment-submission-v1.0`)
 
 `assessment-submission-v1.0` (commit `d2a3b88`, archive

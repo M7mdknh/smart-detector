@@ -103,12 +103,16 @@ On `/simulation`, load the `overhead_ppe` preset and toggle the **Helmet**
 checkbox off under **Worker** (`POST .../commands` with
 `{"command":"set_worker","helmet":false}`), then check **Overhead work
 active**. On `/dashboard`, the camera panel (right of the main row) shows
-**real CV replay inference** — bounding boxes/labels from the bundled
-`demo-assets/replay.mp4` running through the fine-tuned YOLO11n + ByteTrack
-pipeline (`camera_id`, `vision.status`, per-track `detected_class`) — shown
-separately from the simulation-ground-truth badge on `/simulation`; the two
-provenances (`CV_MODEL` vs. `SIMULATION_GROUND_TRUTH`) are never merged into
-one label. After the 3-second PPE-violation dwell
+**real CV replay inference** as an actual annotated image — boxes, class
+labels, confidence, anonymous track IDs, PPE state, and the configured zone
+polygons burned into a genuinely decoded frame from the bundled
+`demo-assets/replay.mp4`, refreshed roughly once per second from `GET
+/api/v1/vision/frame.jpg` (see `docs/adr/0003-annotated-camera-frame-delivery.md`)
+— plus the existing structured per-track list (`camera_id`, `vision.status`,
+per-track `detected_class`) below it for explainability. Shown separately
+from the simulation-ground-truth badge on `/simulation`; the two provenances
+(`CV_MODEL` vs. `SIMULATION_GROUND_TRUTH`) are never merged into one label.
+After the 3-second PPE-violation dwell
 (`PPE_VIOLATION_SECONDS = 3.0`), a `HIGH` severity
 `PPE_HELMET_OVERHEAD_VIOLATION` incident opens.
 

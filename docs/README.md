@@ -208,7 +208,11 @@ would be misleading. `CV_MODEL` evidence populates the camera panel
 independently, with its own provenance badge, model version, and confidence —
 both channels use the identical `VisionEvidence` schema and are never
 conflated (verified in `tests/test_vision_e2e.py::test_real_detector_produces_person_and_ppe_evidence`,
-which asserts every real-detector row carries `source == "CV_MODEL"`).
+which asserts every real-detector row carries `source == "CV_MODEL"`). Since
+v3.0, the camera panel also renders the real annotated frame image itself
+(`GET /api/v1/vision/frame.jpg`, boxes/labels/track-IDs/zone polygons burned
+into an actual decoded frame), not only the structured per-track list — see
+`docs/adr/0003-annotated-camera-frame-delivery.md`.
 
 **Dataset/licence:** Ultralytics Construction-PPE dataset,
 <https://docs.ultralytics.com/datasets/detect/construction-ppe>

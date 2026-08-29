@@ -500,21 +500,25 @@ def run_replay_loop(worker) -> None:
             worker.observed_fps = 1.0 / max(1e-6, time.monotonic() - now_wall + min_interval)
             session.commit()
 
-            if settings.interview_demo_mode:
-                _cache_annotated_frame(frame, persons, ppe_candidates, tracks, model_version, event_time, frame_id)
+            _cache_annotated_frame(frame, persons, ppe_candidates, tracks, model_version, event_time, frame_id)
         finally:
             session.close()
 
 
 def _cache_annotated_frame(frame, persons, ppe_candidates, tracks, model_version, event_time, frame_id, camera_id: str = "camera-1") -> None:
-    """Renders the real annotated frame and caches it (app/inference/frame_cache.py)
-    so app/services/evidence_image.py can attach a genuine captured frame to a
-    CV_MODEL-driven incident. Only called when interview_demo_mode is on -- the
-    default /dashboard simulator demo never pays this extra render cost, and
-    its incidents are SIMULATION_GROUND_TRUTH-driven anyway (see
-    app/services/incident_service.py::_latest_vision_rows), so this cache would
-    never be consulted for them. Best-effort: a rendering failure must never
-    break frame ingestion."""
+    """Renders the real annotated frame and caches it (app/inference/frame_cache.py).
+
+    Two independent consumers read this cache: app/services/evidence_image.py
+    (interview_demo_mode only, to attach a genuine captured frame to a
+    CV_MODEL-driven incident) and GET /api/v1/vision/frame.jpg (always, so the
+    live /dashboard camera panel can display real annotated pixels -- boxes,
+    labels, track IDs, and zone polygons burned into an actual decoded replay
+    frame -- rather than structured detection text alone). Always run, not
+    gated to interview_demo_mode: the default simulator-driven dashboard demo
+    still benefits from seeing genuine CV output, even though its incidents
+    remain SIMULATION_GROUND_TRUTH-driven. The render cost (OpenCV drawing on
+    one frame at TARGET_FPS=10) is negligible on CPU. Best-effort: a rendering
+    failure must never break frame ingestion."""
     try:
         import cv2
 

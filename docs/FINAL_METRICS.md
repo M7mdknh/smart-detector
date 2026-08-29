@@ -1,5 +1,14 @@
 # Factory Safety Sentinel — Authoritative Metrics Table
 
+**v3.0 note (2026-08-30):** every number below was re-reproduced this pass via
+`make evaluate` and `make evaluate-forecast` against the unchanged active
+artifacts (`ppe-yolo11n.pt` sha256 `a6b5aedc...c39fca`, calibrated XGBoost
+checksum unchanged) and matched the previously-committed values to within
+floating-point noise from NMS/eval ordering (e.g. `no_helmet` recall stayed
+0.175). See `docs/FINAL_VERIFICATION.md`'s "v3.0 pass" section for the exact
+commands and a dataset-path-resolution fix that was required to reproduce the
+vision section cleanly in this environment (no metric values changed).
+
 This is the single reconciled source of truth for every reported number in
 this submission. Every value below is copied verbatim (or trivially rounded)
 from a generated file under `models/evaluation/`; none are recomputed here.

@@ -43,14 +43,30 @@ CANDIDATE_THRESHOLDS = [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40]
 PRECISION_FLOOR = {"person": 0.60, "helmet": 0.70, "vest": 0.60, "no_helmet": 0.15}
 
 
+def _resolve_construction_ppe_yaml() -> Path:
+    """Same resolution as scripts/evaluate_vision_model.py -- see that module's
+    docstring for why a bare relative name doesn't work here."""
+    from ultralytics.utils import SETTINGS
+
+    datasets_dir = Path(SETTINGS.get("datasets_dir", "."))
+    for candidate in (datasets_dir / "construction-ppe.yaml", datasets_dir / "construction-ppe" / "data.yaml"):
+        if candidate.exists():
+            return candidate
+    raise FileNotFoundError(
+        f"construction-ppe dataset not found under Ultralytics datasets_dir ({datasets_dir}); "
+        "place the licensed dataset locally before running this threshold sweep."
+    )
+
+
 def sweep():
     from ultralytics import YOLO
 
+    dataset_yaml = _resolve_construction_ppe_yaml()
     model = YOLO(str(ARTIFACT_PATH))
     sweep_results: dict[str, list[dict]] = {name: [] for name in RUNTIME_DATASET_IDS}
 
     for conf in CANDIDATE_THRESHOLDS:
-        metrics = model.val(data="construction-ppe.yaml", split="val", conf=conf, verbose=False)
+        metrics = model.val(data=str(dataset_yaml), split="val", conf=conf, verbose=False)
         for name, dataset_id in RUNTIME_DATASET_IDS.items():
             try:
                 idx = list(metrics.box.ap_class_index).index(dataset_id)

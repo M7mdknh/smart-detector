@@ -281,6 +281,34 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/vision/frame.jpg": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Vision Frame
+         * @description Latest real annotated replay/camera frame (JPEG), for the dashboard
+         *     camera panel's live image. Reused from app/inference/frame_cache.py --
+         *     the same real detection+tracking run that produces VisionEvidence rows,
+         *     not a separate/second pipeline. 404 (not a blank/placeholder image) when
+         *     no frame has been cached recently: camera/detector unavailable, or the
+         *     cached frame aged out, must show as degraded, never as a fabricated safe
+         *     scene. The frontend polls this endpoint on an interval (see
+         *     docs/adr/0003-annotated-camera-frame-delivery.md for why polling was
+         *     chosen over MJPEG/WebSocket binary framing).
+         */
+        get: operations["vision_frame_api_v1_vision_frame_jpg_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/vision/latest": {
         parameters: {
             query?: never;
@@ -950,6 +978,26 @@ export interface operations {
         };
     };
     system_status_api_v1_system_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    vision_frame_api_v1_vision_frame_jpg_get: {
         parameters: {
             query?: never;
             header?: never;

@@ -1,5 +1,25 @@
 # Acceptance Results
 
+## v3.0 addendum (2026-08-30)
+
+**New capability, verified PASS:** the `/dashboard` camera panel now displays
+a genuine annotated frame image (`GET /api/v1/vision/frame.jpg`), not
+structured detection text alone — see
+`docs/adr/0003-annotated-camera-frame-delivery.md` and the "v3.0 pass"
+section of `docs/FINAL_VERIFICATION.md` for the full command log. Verified by:
+new backend tests (`backend/tests/test_vision_frame_endpoint.py`, 4 tests:
+real bytes served, 404 when no frame cached, 404 when stale, camera-id
+isolation), new frontend tests (`frontend/tests/CameraPanel.test.tsx`, 4
+tests), and a strengthened `make e2e` / `make interview-demo-e2e` that assert
+the rendered `<img>` actually decodes (`naturalWidth/naturalHeight > 50`) and
+that the raw HTTP response is a real `image/jpeg` over 5000 bytes starting
+with the JPEG SOI marker — not merely that an `<img>` tag exists in the DOM.
+Manually confirmed in a real browser against a live `make demo` run (fetched
+frame: 960×540, 111,847 bytes, showing real person/vest/helmet boxes, track
+IDs, confidence, and the Restricted Zone / overhead-zone polygons burned into
+an actual replay frame). All 177 backend + 22 frontend tests pass; full
+release gate re-run and documented in `docs/FINAL_VERIFICATION.md`.
+
 Performed 2026-08-29 as the final scoring pass of the submission-readiness audit, **updated
 the same day in a correction pass** after fixing the 4 blockers the first pass found (metrics
 rounding inconsistency, the missing-YOLO undeclared-download fallback, the `make setup`
