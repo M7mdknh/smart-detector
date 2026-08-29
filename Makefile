@@ -120,15 +120,13 @@ check-vision-leakage:
 	cd $(BACKEND) && .venv/bin/python scripts/vision_data/check_vision_leakage.py --manifest "$(MANIFEST)" --splits "$(SPLITS)" --dataset-root "$(INPUT_DIR)"
 
 interview-demo:
-	# Guard-only target: no genuinely licensed continuous "interview" video has
-	# been acquired in this project (see docs/adr/0002-vision-v2-roadmap.md).
-	# Refuses to run rather than faking a slideshow demo as if it were
-	# continuous video.
-	@$(PY) -c "import torch, ultralytics" || \
-		(echo "ERROR: vision dependencies not installed. Run 'make setup-vision' first." && exit 1)
-	@test -f demo-assets/interview_compilation_source.mp4 || \
-		(echo "ERROR: demo-assets/interview_compilation_source.mp4 not found. See docs/INTERVIEW_DEMO.md for how to add real licensed footage; this target intentionally refuses to run a fake slideshow in its place." && exit 1)
-	@echo "Prerequisites present -- see docs/INTERVIEW_DEMO.md for the intended run sequence."
+	# Runs the genuine interview-demonstration sequence end to end against real
+	# footage (see demo-assets/INTERVIEW_VIDEO_SOURCES.md for its provenance):
+	# verifies prerequisites, starts a real backend+frontend with CV_MODEL-driven
+	# incidents enabled, generates real incidents/evidence via the real
+	# detector+policy+database+API, and shuts down cleanly. No slideshow or
+	# fake-alert fallback -- see scripts/run-interview-demo.sh.
+	@bash scripts/run-interview-demo.sh
 
 guided-demo:
 	cd $(BACKEND) && .venv/bin/python scripts/guided_demo.py

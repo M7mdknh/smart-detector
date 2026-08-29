@@ -5,7 +5,7 @@ Transaction shape: upsert/deduplicate incident -> attach evidence -> append audi
 """
 
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -80,24 +80,45 @@ def _latest_vision_rows(session: Session, zone_id: str, now: datetime, window_se
     # misleading (CLAUDE.md invariant #3). CV_MODEL evidence still populates the
     # camera panel independently, with its own provenance badge.
     #
-    # settings.interview_demo_mode (default False) is the single, explicit
-    # exception: it is turned on only when the vision worker has genuinely been
-    # pointed at real, licensed continuous footage that IS this camera's feed
-    # (see docs/INTERVIEW_DEMO.md), in which case CV_MODEL evidence is just as
-    # honest a driver of incidents as SIMULATION_GROUND_TRUTH is in the default
-    # demo -- so it is included too, never substituted for it.
-    allowed_sources = ["SIMULATION_GROUND_TRUTH"]
-    if get_settings().interview_demo_mode:
-        allowed_sources.append("CV_MODEL")
-
+    # `now` here is the SIMULATION clock (run.event_time), which the caller
+    # (app/services/pipeline.py) advances by whole simulated minutes per tick --
+    # ground-truth rows are stamped with that same simulation clock (see
+    # app/simulation/engine.py::tick's `new_event_time`), so matching them
+    # against a window anchored on `now` is correct.
     since = now - timedelta(seconds=window_seconds)
     stmt = select(VisionEvidenceRow).where(
         VisionEvidenceRow.zone_id == zone_id,
         VisionEvidenceRow.event_time >= since,
         VisionEvidenceRow.event_time <= now,  # exclude rows from a different run whose clock ran ahead of `now`
-        VisionEvidenceRow.source.in_(allowed_sources),
+        VisionEvidenceRow.source == "SIMULATION_GROUND_TRUTH",
     ).order_by(VisionEvidenceRow.event_time.desc())
-    return list(session.execute(stmt).scalars())
+    rows = list(session.execute(stmt).scalars())
+
+    # settings.interview_demo_mode (default False) is the single, explicit
+    # exception: it is turned on only when the vision worker has genuinely been
+    # pointed at real, licensed continuous footage that IS this camera's feed
+    # (see docs/INTERVIEW_DEMO.md), in which case CV_MODEL evidence is just as
+    # honest a driver of incidents as SIMULATION_GROUND_TRUTH is in the default
+    # demo -- so it is included too, never substituted for it. CV_MODEL rows are
+    # always stamped with REAL wall-clock time by the vision worker
+    # (app/inference/vision_worker_impl.py's `datetime.now(timezone.utc)`),
+    # regardless of the simulation clock -- which typically advances several
+    # simulated minutes per real second. Anchoring their window on the
+    # simulation `now` instead of real wall-clock time would make it drift out
+    # of alignment with genuinely-current CV_MODEL evidence within seconds of a
+    # scenario starting, so it is anchored on real wall-clock time instead.
+    if get_settings().interview_demo_mode:
+        real_now = datetime.now(timezone.utc)
+        real_since = real_now - timedelta(seconds=window_seconds)
+        cv_stmt = select(VisionEvidenceRow).where(
+            VisionEvidenceRow.zone_id == zone_id,
+            VisionEvidenceRow.event_time >= real_since,
+            VisionEvidenceRow.event_time <= real_now,
+            VisionEvidenceRow.source == "CV_MODEL",
+        ).order_by(VisionEvidenceRow.event_time.desc())
+        rows += list(session.execute(cv_stmt).scalars())
+
+    return rows
 
 
 def build_risk_inputs(session: Session, forecast: ForecastRow, exposure: dict, zone_id: str, now: datetime, camera_degraded: bool) -> RiskInputs:

@@ -117,15 +117,27 @@ def _try_real_frame_bytes(row: VisionEvidenceRow | None, incident: IncidentRow) 
     """Returns real annotated-frame JPEG bytes captured by the vision worker
     (app/inference/frame_cache.py) if interview_demo_mode is on, the triggering
     row is genuinely CV_MODEL, and a recent-enough frame was cached -- else
-    None (never fabricated)."""
+    None (never fabricated).
+
+    Staleness is anchored on REAL wall-clock time, not `incident.updated_at`
+    (the simulation clock, which the caller advances by whole simulated
+    minutes per tick -- see app/simulation/engine.py::tick). The vision worker
+    always caches frames with real wall-clock timestamps
+    (app/inference/frame_cache.py), so anchoring on the simulation clock would
+    make every cached frame look stale within seconds of a scenario running,
+    even one genuinely captured a moment ago -- found live via
+    `make interview-demo` reporting real incidents but zero real evidence
+    frames despite a healthy, actively-processing vision worker."""
     if row is None or row.source != "CV_MODEL":
         return None
     if not get_settings().interview_demo_mode:
         return None
     try:
+        from datetime import datetime, timezone
+
         from app.inference.frame_cache import get_latest_frame
 
-        cached = get_latest_frame(row.camera_id, incident.updated_at)
+        cached = get_latest_frame(row.camera_id, datetime.now(timezone.utc))
         if cached is None:
             return None
         jpeg_bytes, _frame_id, _event_time = cached

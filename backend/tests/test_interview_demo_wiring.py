@@ -55,7 +55,13 @@ def test_cv_model_rows_included_when_interview_demo_mode_on(session, now, monkey
     settings = get_settings()
     monkeypatch.setattr(type(settings), "interview_demo_mode", property(lambda self: True), raising=False)
 
-    _add_vision_row(session, now, "CV_MODEL")
+    # CV_MODEL rows are matched against REAL wall-clock time (see
+    # incident_service._latest_vision_rows), not the simulation-clock `now`
+    # fixture used for everything else -- the vision worker always stamps
+    # CV_MODEL rows with datetime.now(timezone.utc) regardless of the
+    # simulation clock, which can be many simulated minutes ahead of real time
+    # within seconds of a scenario starting.
+    _add_vision_row(session, datetime.now(timezone.utc), "CV_MODEL")
     rows = incident_service._latest_vision_rows(session, "zone-1", now)
     assert len(rows) == 1
     assert rows[0].source == "CV_MODEL"
@@ -68,9 +74,24 @@ def test_simulation_ground_truth_still_included_when_interview_demo_mode_on(sess
     monkeypatch.setattr(type(settings), "interview_demo_mode", property(lambda self: True), raising=False)
 
     _add_vision_row(session, now, "SIMULATION_GROUND_TRUTH", track_id=1)
-    _add_vision_row(session, now, "CV_MODEL", track_id=2)
+    _add_vision_row(session, datetime.now(timezone.utc), "CV_MODEL", track_id=2)
     rows = incident_service._latest_vision_rows(session, "zone-1", now)
     assert {r.source for r in rows} == {"SIMULATION_GROUND_TRUTH", "CV_MODEL"}
+
+
+def test_cv_model_rows_excluded_when_stamped_far_from_real_wall_clock_time(session, now, monkeypatch):
+    """Regression: a CV_MODEL row stamped at the simulation-clock `now` (which
+    races ahead of real wall-clock time within seconds of a scenario running)
+    must NOT be matched just because it happens to equal `now` -- only rows
+    genuinely close to real wall-clock time are current evidence."""
+    from app.settings import get_settings
+
+    settings = get_settings()
+    monkeypatch.setattr(type(settings), "interview_demo_mode", property(lambda self: True), raising=False)
+
+    _add_vision_row(session, now, "CV_MODEL")  # `now` fixture is 2026-01-01, nowhere near real time
+    rows = incident_service._latest_vision_rows(session, "zone-1", now)
+    assert rows == []
 
 
 def test_restricted_zone_incident_can_be_driven_by_cv_model_evidence_in_interview_mode(session, now, monkeypatch):
@@ -79,7 +100,7 @@ def test_restricted_zone_incident_can_be_driven_by_cv_model_evidence_in_intervie
     settings = get_settings()
     monkeypatch.setattr(type(settings), "interview_demo_mode", property(lambda self: True), raising=False)
 
-    _add_vision_row(session, now, "CV_MODEL", restricted="INSIDE")
+    _add_vision_row(session, datetime.now(timezone.utc), "CV_MODEL", restricted="INSIDE")
     from app.storage.models import ForecastRow
 
     forecast = ForecastRow(
@@ -179,8 +200,14 @@ def test_evidence_uses_real_frame_when_interview_demo_mode_and_cv_model_and_cach
 
     frame_cache.reset_for_tests()
     real_bytes = b"\xff\xd8\xff\xe0genuinejpegbytes"
-    frame_cache.set_latest_frame("camera-1", real_bytes, 3, now)
-    _add_vision_row(session, now, "CV_MODEL", restricted="INSIDE")
+    # Both the cached frame and the vision row are matched against REAL
+    # wall-clock time (see incident_service._latest_vision_rows and
+    # evidence_image._try_real_frame_bytes) -- independent of the `now`
+    # fixture, which stands in for the simulation clock passed to
+    # upsert_incident below.
+    real_now = datetime.now(timezone.utc)
+    frame_cache.set_latest_frame("camera-1", real_bytes, 3, real_now)
+    _add_vision_row(session, real_now, "CV_MODEL", restricted="INSIDE")
 
     row, created = incident_service.upsert_incident(
         session, make_decision(IncidentType.PERSON_IN_RESTRICTED_ZONE, Severity.HIGH), "zone-1", None, None, "PERSON_IN_RESTRICTED_ZONE", now, []
@@ -198,9 +225,11 @@ def test_evidence_falls_back_to_schematic_when_cache_stale(session, now, monkeyp
     monkeypatch.setattr(type(settings), "interview_demo_mode", property(lambda self: True), raising=False)
 
     frame_cache.reset_for_tests()
-    # Cached frame far too old relative to `now` -> must not be silently reused.
-    frame_cache.set_latest_frame("camera-1", b"stale", 1, now - timedelta(seconds=120))
-    _add_vision_row(session, now, "CV_MODEL", restricted="INSIDE")
+    # Cached frame far too old relative to REAL wall-clock time -> must not be
+    # silently reused (both the cache staleness check and the vision-row match
+    # are anchored on real wall-clock time, not the `now` fixture/simulation clock).
+    frame_cache.set_latest_frame("camera-1", b"stale", 1, datetime.now(timezone.utc) - timedelta(seconds=120))
+    _add_vision_row(session, datetime.now(timezone.utc), "CV_MODEL", restricted="INSIDE")
 
     row, created = incident_service.upsert_incident(
         session, make_decision(IncidentType.PERSON_IN_RESTRICTED_ZONE, Severity.HIGH), "zone-1", None, None, "PERSON_IN_RESTRICTED_ZONE", now, []
