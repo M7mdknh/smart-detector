@@ -24,6 +24,22 @@ from pathlib import Path
 
 NEAR_DUP_HAMMING_THRESHOLD = 5  # out of 64 bits; small enough to avoid false positives on distinct scenes
 
+# Full O(n^2) pairwise Hamming comparison is only tractable up to a few
+# thousand images. Above this, near-duplicate candidates are pre-filtered
+# with LSH banding (split the 64-bit hash into BANDS equal-width bands;
+# only compare pairs that share at least one band exactly) before the exact
+# Hamming distance is computed on the surviving candidate pairs. This is the
+# standard LSH approximation for Hamming-space near-duplicate search: any
+# pair differing by at most NEAR_DUP_HAMMING_THRESHOLD=5 bits over 4 bands of
+# 16 bits each has, on average, a high chance of leaving at least one band
+# untouched, but (being an approximation) can in principle miss a pair whose
+# 5 differing bits are spread one-per-band across all 4 bands. Real-world
+# scale (tens of thousands of images) makes this the only tractable option;
+# documented here rather than silently applied.
+NEAR_DUP_LSH_THRESHOLD_IMAGES = 3000
+NEAR_DUP_LSH_BANDS = 4
+NEAR_DUP_LSH_BAND_BITS = 16  # 4 bands * 16 bits = 64-bit hash
+
 
 def _ahash_fallback(image_path: Path) -> int:
     from PIL import Image
@@ -51,6 +67,50 @@ def hamming_distance(a: int, b: int) -> int:
     return bin(a ^ b).count("1")
 
 
+def _lsh_bands(value: int) -> list[int]:
+    mask = (1 << NEAR_DUP_LSH_BAND_BITS) - 1
+    return [(value >> (i * NEAR_DUP_LSH_BAND_BITS)) & mask for i in range(NEAR_DUP_LSH_BANDS)]
+
+
+def find_near_duplicate_pairs(phashes: dict[str, int], threshold: int = NEAR_DUP_HAMMING_THRESHOLD) -> list[tuple[str, str, int]]:
+    """Returns (path_a, path_b, hamming_distance) for every pair whose
+    perceptual hashes differ by <= threshold bits. Uses full O(n^2) pairwise
+    comparison for small inputs and LSH banding (see module docstring) above
+    NEAR_DUP_LSH_THRESHOLD_IMAGES to stay tractable at real dataset scale."""
+    paths = list(phashes.keys())
+    pairs_checked: set[tuple[str, str]] = set()
+    results: list[tuple[str, str, int]] = []
+
+    if len(paths) <= NEAR_DUP_LSH_THRESHOLD_IMAGES:
+        candidate_pairs = ((paths[i], paths[j]) for i in range(len(paths)) for j in range(i + 1, len(paths)))
+    else:
+        buckets: dict[tuple[int, int], list[str]] = defaultdict(list)
+        for p in paths:
+            for band_idx, band_val in enumerate(_lsh_bands(phashes[p])):
+                buckets[(band_idx, band_val)].append(p)
+
+        def _gen():
+            for bucket_paths in buckets.values():
+                if len(bucket_paths) < 2:
+                    continue
+                for i in range(len(bucket_paths)):
+                    for j in range(i + 1, len(bucket_paths)):
+                        a, b = bucket_paths[i], bucket_paths[j]
+                        yield (a, b) if a < b else (b, a)
+
+        candidate_pairs = _gen()
+
+    for a, b in candidate_pairs:
+        key = (a, b) if a < b else (b, a)
+        if key in pairs_checked:
+            continue
+        pairs_checked.add(key)
+        dist = hamming_distance(phashes[a], phashes[b])
+        if dist <= threshold:
+            results.append((key[0], key[1], dist))
+    return results
+
+
 def audit_manifest(manifest_path: Path, dataset_root: Path) -> dict:
     manifest = json.loads(manifest_path.read_text())
     images = manifest.get("images", [])
@@ -70,14 +130,10 @@ def audit_manifest(manifest_path: Path, dataset_root: Path) -> dict:
 
     exact_duplicates = [group for group in exact_dup_groups.values() if len(group) > 1]
 
-    near_duplicates = []
-    paths = list(phashes.keys())
-    for i in range(len(paths)):
-        for j in range(i + 1, len(paths)):
-            p1, p2 = paths[i], paths[j]
-            dist = hamming_distance(phashes[p1], phashes[p2])
-            if dist <= NEAR_DUP_HAMMING_THRESHOLD:
-                near_duplicates.append({"a": p1, "b": p2, "hamming_distance": dist})
+    near_duplicates = [
+        {"a": p1, "b": p2, "hamming_distance": dist}
+        for p1, p2, dist in find_near_duplicate_pairs(phashes)
+    ]
 
     class_balance = Counter()
     for rec in images:

@@ -142,7 +142,27 @@
         0.7832745704086017
       ]
     },
-    "note": "v1.0 training was externally interrupted at epoch 36/60. A validation-split threshold sweep on v1.0 (models/evaluation/ppe_threshold_sweep_v1.0.json) showed no_helmet recall plateaued at 0.237 across every tested confidence threshold, indicating a model-capacity limit rather than a threshold problem -- this was the validation evidence used to justify a targeted continuation-training experiment rather than a from-scratch retrain. v1.1 resumed the SAME interrupted run to its original 60-epoch target from the saved optimizer/scheduler state (train/val split only, same seed=42, no test-split access during training or tuning). Every held-out test-set metric improved or held steady (see test_set_comparison_v1.0_to_v1.1 above); person precision moved by -0.009, within run-to-run noise. Promoted to default per the task's promotion criteria. Trained on the full 11-class published label set unmodified; the runtime adapter filters to person/helmet/vest/no_helmet only. v1.0 artifact, metrics, and thresholds are preserved (see previous_version above), never deleted."
+    "note": "v1.0 training was externally interrupted at epoch 36/60. A validation-split threshold sweep on v1.0 (models/evaluation/ppe_threshold_sweep_v1.0.json) showed no_helmet recall plateaued at 0.237 across every tested confidence threshold, indicating a model-capacity limit rather than a threshold problem -- this was the validation evidence used to justify a targeted continuation-training experiment rather than a from-scratch retrain. v1.1 resumed the SAME interrupted run to its original 60-epoch target from the saved optimizer/scheduler state (train/val split only, same seed=42, no test-split access during training or tuning). Every held-out test-set metric improved or held steady (see test_set_comparison_v1.0_to_v1.1 above); person precision moved by -0.009, within run-to-run noise. Promoted to default per the task's promotion criteria. Trained on the full 11-class published label set unmodified; the runtime adapter filters to person/helmet/vest/no_helmet only. v1.0 artifact, metrics, and thresholds are preserved (see previous_version above), never deleted.",
+    "rejected_experiments": [
+      {
+        "candidate_version": "1.2-candidate",
+        "candidate_artifact_path": "models/artifacts/ppe-yolo11n-v1.2-epoch7-candidate.pt",
+        "candidate_sha256": "58365b8f1653dc0f7b8400052e6db233e84902e701e3976b86346a4e7783cbfc",
+        "decision": "REJECTED",
+        "decided_at": "2026-08-29T15:59:00Z",
+        "base_checkpoint": "models/artifacts/ppe-yolo11n.pt (v1.1, active at the time)",
+        "new_dataset": "Industrial Safety (Roboflow Universe, MIT license) -- see models/evaluation/vision_v1.2_dataset_manifest.json",
+        "training_status": "7 of a requested 50 epochs completed (models/evaluation/vision_training_runs/ppe-yolo11n-v1.2-full/args.yaml, results.csv). Training was externally interrupted because the projected wall-clock runtime on the available NVIDIA MX450 was unacceptable -- this was NOT early stopping (no patience/plateau criterion fired) and 50 epochs were never claimed as completed. The 50-epoch run was NOT resumed; this checkpoint was evaluated as-is, an intentionally early/partial candidate.",
+        "comparative_evaluation_ref": "models/evaluation/vision_v1.2_comparative_evaluation.json",
+        "promotion_decision_ref": "models/evaluation/vision_v1.2_promotion_decision.json",
+        "gate_result_summary": {
+          "no_helmet_recall_improves": "FAIL -- 0.25 (candidate) vs 0.45 (v1.1) on the construction-ppe test split, both above the 0.175 baseline reference but the candidate did not improve over v1.1's own recall on this run",
+          "no_helmet_precision_not_collapsed": "PASS",
+          "no_material_person_helmet_vest_regression": "FAIL -- candidate's person recall on the construction-ppe test split collapsed to 0.0 (from 0.8136), helmet recall collapsed to 0.099 (from 0.901); the candidate's 4-class detector, trained for only 7 epochs on a different dataset, does not yet generalize to this dataset's images"
+        },
+        "reason_rejected": "Promotion gate failed on 2 of 3 checks (see gate_result_summary). Expected outcome for an early-stopped 7-epoch candidate: the model has not converged. No further training was performed per explicit instruction not to resume the interrupted run. v1.1 remains the active ppe_detector; models/registry.json's ppe_detector.* fields above were never modified by this rejected experiment."
+      }
+    ]
   },
   "forecast_gru": {
     "name": "forecast_gru",

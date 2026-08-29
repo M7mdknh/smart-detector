@@ -1,0 +1,231 @@
+{
+  "generated_at": "2026-08-29T15:51:33Z",
+  "declared_hardware": "NVIDIA GeForce MX450",
+  "gpu_available": true,
+  "torch_version": "2.5.1+cu121",
+  "v1_1_active": {
+    "artifact_path": "models/artifacts/ppe-yolo11n.pt",
+    "sha256": "a6b5aedc326b2ad9118d3f5ce1f97769c746b9df92b073df0c6d62b7bacb38ae",
+    "conf_thresholds_used": {
+      "helmet": 0.35,
+      "vest": 0.4,
+      "person": 0.4,
+      "no_helmet": 0.05
+    },
+    "source_1_construction_ppe_test_split": {
+      "status": "OK",
+      "n_images": 141,
+      "per_class": {
+        "person": {
+          "gt_count": 236,
+          "n_predictions_at_runtime_threshold": 228,
+          "precision": 0.8421052631578947,
+          "recall": 0.8135593220338984,
+          "ap50": 0.7861600244289052
+        },
+        "helmet": {
+          "gt_count": 192,
+          "n_predictions_at_runtime_threshold": 184,
+          "precision": 0.9402173913043478,
+          "recall": 0.9010416666666666,
+          "ap50": 0.896416199930471
+        },
+        "vest": {
+          "gt_count": 178,
+          "n_predictions_at_runtime_threshold": 173,
+          "precision": 0.8901734104046243,
+          "recall": 0.8651685393258427,
+          "ap50": 0.8444240317707714
+        },
+        "no_helmet": {
+          "gt_count": 40,
+          "n_predictions_at_runtime_threshold": 116,
+          "precision": 0.15517241379310345,
+          "recall": 0.45,
+          "ap50": 0.19568438071105856
+        }
+      },
+      "method": "custom greedy IoU>=0.5 matching at runtime per-class confidence thresholds, VOC-style AP50; NOT ultralytics model.val() (incompatible nc between v1.1 11-class and v1.2 4-class models)"
+    },
+    "source_2_industrial_safety_test_split": {
+      "status": "OK",
+      "n_images": 9166,
+      "per_class": {
+        "person": {
+          "gt_count": 11035,
+          "n_predictions_at_runtime_threshold": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "ap50": 0.0
+        },
+        "helmet": {
+          "gt_count": 5210,
+          "n_predictions_at_runtime_threshold": 2751,
+          "precision": 0.584151217739004,
+          "recall": 0.3084452975047985,
+          "ap50": 0.22659318680635987
+        },
+        "vest": {
+          "gt_count": 4827,
+          "n_predictions_at_runtime_threshold": 2838,
+          "precision": 0.5669485553206484,
+          "recall": 0.3333333333333333,
+          "ap50": 0.2532738014876957
+        },
+        "no_helmet": {
+          "gt_count": 2227,
+          "n_predictions_at_runtime_threshold": 2328,
+          "precision": 0.16838487972508592,
+          "recall": 0.1760215536596318,
+          "ap50": 0.04333344217588326
+        }
+      },
+      "method": "custom greedy IoU>=0.5 matching at runtime per-class confidence thresholds, VOC-style AP50; NOT ultralytics model.val() (incompatible nc between v1.1 11-class and v1.2 4-class models)"
+    },
+    "source_3_bundled_replay_clip": {
+      "status": "OK",
+      "n_frames": 480,
+      "unique_track_ids": 11,
+      "id_switch_candidate_events": 1,
+      "ppe_class_frame_counts": {
+        "helmet": 423,
+        "no_helmet": 94,
+        "vest": 588
+      },
+      "latency_ms_median": 13.827694499923382,
+      "latency_ms_p95": 14.876012000058836,
+      "achieved_fps": 69.36752089173048
+    },
+    "source_4_natural_motion_clip": {
+      "status": "OK",
+      "n_frames": 360,
+      "unique_track_ids": 3,
+      "id_switch_candidate_events": 0,
+      "ppe_class_frame_counts": {
+        "helmet": 358,
+        "no_helmet": 0,
+        "vest": 381
+      },
+      "latency_ms_median": 13.642620500036173,
+      "latency_ms_p95": 14.558177000026262,
+      "achieved_fps": 71.44587621519129
+    },
+    "source_5_other_bundled_video": {
+      "status": "NOT_APPLICABLE",
+      "note": "demo-assets/ contains only replay.mp4 (source 3) and replay_natural_motion.mp4 (source 4). No other continuous video is legally bundled in this repo; nothing invented."
+    }
+  },
+  "v1_2_candidate": {
+    "artifact_path": "models/artifacts/ppe-yolo11n-v1.2-epoch7-candidate.pt",
+    "sha256": "58365b8f1653dc0f7b8400052e6db233e84902e701e3976b86346a4e7783cbfc",
+    "conf_thresholds_used": {
+      "person": 0.35,
+      "helmet": 0.25,
+      "vest": 0.35,
+      "no_helmet": 0.05
+    },
+    "source_1_construction_ppe_test_split": {
+      "status": "OK",
+      "n_images": 141,
+      "per_class": {
+        "person": {
+          "gt_count": 236,
+          "n_predictions_at_runtime_threshold": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "ap50": 0.0
+        },
+        "helmet": {
+          "gt_count": 192,
+          "n_predictions_at_runtime_threshold": 23,
+          "precision": 0.8260869565217391,
+          "recall": 0.09895833333333333,
+          "ap50": 0.08727321019941157
+        },
+        "vest": {
+          "gt_count": 178,
+          "n_predictions_at_runtime_threshold": 136,
+          "precision": 0.7647058823529411,
+          "recall": 0.5842696629213483,
+          "ap50": 0.533948518786731
+        },
+        "no_helmet": {
+          "gt_count": 40,
+          "n_predictions_at_runtime_threshold": 48,
+          "precision": 0.20833333333333334,
+          "recall": 0.25,
+          "ap50": 0.1142455662616953
+        }
+      },
+      "method": "custom greedy IoU>=0.5 matching at runtime per-class confidence thresholds, VOC-style AP50; NOT ultralytics model.val() (incompatible nc between v1.1 11-class and v1.2 4-class models)"
+    },
+    "source_2_industrial_safety_test_split": {
+      "status": "OK",
+      "n_images": 9166,
+      "per_class": {
+        "person": {
+          "gt_count": 11035,
+          "n_predictions_at_runtime_threshold": 2062,
+          "precision": 0.8273520853540253,
+          "recall": 0.1545990031717263,
+          "ap50": 0.14364843593156068
+        },
+        "helmet": {
+          "gt_count": 5210,
+          "n_predictions_at_runtime_threshold": 1242,
+          "precision": 0.8107890499194848,
+          "recall": 0.19328214971209212,
+          "ap50": 0.16758268633253198
+        },
+        "vest": {
+          "gt_count": 4827,
+          "n_predictions_at_runtime_threshold": 2523,
+          "precision": 0.5628220372572335,
+          "recall": 0.29417857882742904,
+          "ap50": 0.21850195047617704
+        },
+        "no_helmet": {
+          "gt_count": 2227,
+          "n_predictions_at_runtime_threshold": 3207,
+          "precision": 0.2719052073589024,
+          "recall": 0.3915581499775483,
+          "ap50": 0.23426562845647303
+        }
+      },
+      "method": "custom greedy IoU>=0.5 matching at runtime per-class confidence thresholds, VOC-style AP50; NOT ultralytics model.val() (incompatible nc between v1.1 11-class and v1.2 4-class models)"
+    },
+    "source_3_bundled_replay_clip": {
+      "status": "OK",
+      "n_frames": 480,
+      "unique_track_ids": 0,
+      "id_switch_candidate_events": 0,
+      "ppe_class_frame_counts": {
+        "helmet": 21,
+        "no_helmet": 40,
+        "vest": 311
+      },
+      "latency_ms_median": 12.846703499917567,
+      "latency_ms_p95": 13.63887400020758,
+      "achieved_fps": 76.85506995315285
+    },
+    "source_4_natural_motion_clip": {
+      "status": "OK",
+      "n_frames": 360,
+      "unique_track_ids": 0,
+      "id_switch_candidate_events": 0,
+      "ppe_class_frame_counts": {
+        "helmet": 0,
+        "no_helmet": 0,
+        "vest": 374
+      },
+      "latency_ms_median": 13.327125499927206,
+      "latency_ms_p95": 14.044584999737708,
+      "achieved_fps": 73.30841541607356
+    },
+    "source_5_other_bundled_video": {
+      "status": "NOT_APPLICABLE",
+      "note": "demo-assets/ contains only replay.mp4 (source 3) and replay_natural_motion.mp4 (source 4). No other continuous video is legally bundled in this repo; nothing invented."
+    }
+  },
+  "note": "Metrics reported SEPARATELY per source, never blended. Sources 1-2 are ground-truthed detection metrics (custom IoU-matching evaluator, identical methodology for both artifacts). Sources 3-4 are event-level/tracking behaviour on real continuous video, no ground truth available."
+}

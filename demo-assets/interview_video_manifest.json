@@ -1,0 +1,79 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-08-29T16:07:00Z",
+  "purpose": "Interview-demonstration compilation source manifest -- machine-readable companion to demo-assets/INTERVIEW_VIDEO_SOURCES.md. Every checksum here is computed from the actual committed file, not copied from elsewhere.",
+  "source_clips": [
+    {
+      "id": "clip1_helmet_alert_own_recording",
+      "path": "demo-assets/interview_sources/clip1_helmet_alert_own_recording.mp4",
+      "sha256": "846d3d97df759ffa121253bcc26b89b00c046578572878c0fbbad7e9a27d6f87",
+      "duration_seconds": 13.617098,
+      "resolution": "720x1280",
+      "fps": 29.935,
+      "source": "own recording (user-confirmed)",
+      "license": "own recording -- no third-party license applies",
+      "redistribution_permitted": true,
+      "content_verified_by_frame_inspection": true,
+      "scenes_present": ["missing_helmet", "ppe_compliant", "restricted_zone_walk_candidate"],
+      "scenes_not_present": ["missing_vest", "close_up_machinery"]
+    }
+  ],
+  "compilation": {
+    "path": "demo-assets/interview_compilation_source.mp4",
+    "sha256_placeholder_note": "Computed at build time; verify against the committed file with `sha256sum demo-assets/interview_compilation_source.mp4` -- not hardcoded here to avoid drift if the compilation is rebuilt.",
+    "duration_seconds": 17.566667,
+    "resolution": "720x1280",
+    "fps": 30,
+    "codec": "h264",
+    "size_bytes": 6264923,
+    "segments": [
+      {
+        "index": 0,
+        "kind": "title_card",
+        "label": "MISSING PPE",
+        "sublabel": "Worker without helmet detected",
+        "start_seconds": 0.0,
+        "end_seconds": 2.0,
+        "content": "synthetic (drawtext on black), not sourced footage"
+      },
+      {
+        "index": 1,
+        "kind": "source_segment",
+        "label": "missing_helmet",
+        "source_clip_id": "clip1_helmet_alert_own_recording",
+        "source_clip_start_seconds": 0.0,
+        "source_clip_end_seconds": 1.9,
+        "compilation_start_seconds": 2.0,
+        "compilation_end_seconds": 3.9,
+        "tracker_incident_state_reset_required_before_this_segment": true,
+        "notes": "Worker with hi-vis vest, clearly no helmet (bare head visible). No speed change applied; natural frame timing preserved."
+      },
+      {
+        "index": 2,
+        "kind": "title_card",
+        "label": "PPE COMPLIANT",
+        "sublabel": "Helmet + vest worn correctly",
+        "start_seconds": 3.9,
+        "end_seconds": 5.9,
+        "content": "synthetic (drawtext on black), not sourced footage"
+      },
+      {
+        "index": 3,
+        "kind": "source_segment",
+        "label": "ppe_compliant_and_restricted_zone_walk_candidate",
+        "source_clip_id": "clip1_helmet_alert_own_recording",
+        "source_clip_start_seconds": 1.9,
+        "source_clip_end_seconds": 13.567098,
+        "compilation_start_seconds": 5.9,
+        "compilation_end_seconds": 17.566667,
+        "tracker_incident_state_reset_required_before_this_segment": true,
+        "notes": "Multiple different workers, all wearing both helmet and hi-vis vest, walking a real construction-site dirt path between barrier rails. No worker in this segment is missing a vest -- do not use this footage to claim a missing-vest demonstration. The barrier-rail path (roughly compilation t=10-16s) is the best candidate within this compilation for overlaying a restricted-zone polygon during pipeline processing; it is NOT a separate video segment with its own title card because it is part of the same continuous take as the rest of this segment, and is disclosed here rather than split out to avoid implying more distinct source material exists than genuinely does."
+      }
+    ]
+  },
+  "known_gaps": [
+    "No missing-vest scenario could be sourced (own-recording clip does not contain one; no other clip with a verified license was found -- see INTERVIEW_VIDEO_SOURCES.md for the disqualified Mixkit/Coverr candidates).",
+    "Compilation total duration (17.6s) is well short of the 60-120s target because only one ~14s source clip has been cleared for use. Duration will only grow if additional genuinely licensed or user-recorded clips are supplied.",
+    "The restricted-zone-walk candidate segment uses a handheld, panning camera (not a fixed camera), which will affect tracking stability more than a stationary camera would."
+  ]
+}

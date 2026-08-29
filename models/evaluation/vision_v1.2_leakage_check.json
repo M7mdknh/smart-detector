@@ -1,0 +1,14 @@
+{
+  "command": "backend/.venv/bin/python backend/scripts/vision_data/check_vision_leakage.py --manifest external-data/vision_manifests/industrial_safety_manifest.json --splits external-data/manifest_input/splits.json --dataset-root external-data/manifest_input/industrial_safety",
+  "manifest_image_count": 28119,
+  "split_counts": {"train": 9856, "test": 9166, "val": 9097},
+  "result": "No train/val/test leakage detected.",
+  "exit_code": 0,
+  "wall_clock_seconds": 1.964,
+  "checks_performed": [
+    "exact_duplicate_cross_split (sha256 groups)",
+    "near_duplicate_cross_split (perceptual hash, hamming threshold=5, LSH-banded candidate search)",
+    "scene_group_cross_split (scene_group metadata field, where present)"
+  ],
+  "note": "Run for the first time in this session; no prior recorded leakage-check output existed in the repo despite the dataset manifest text referencing a 'leakage_check below' section. This file is the authoritative record of that check."
+}

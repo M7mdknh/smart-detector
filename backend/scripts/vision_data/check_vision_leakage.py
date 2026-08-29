@@ -23,7 +23,7 @@ import json
 import sys
 from pathlib import Path
 
-from audit_vision_data import hamming_distance, perceptual_hash  # noqa: E402
+from audit_vision_data import find_near_duplicate_pairs, perceptual_hash  # noqa: E402
 
 NEAR_DUP_HAMMING_THRESHOLD = 5
 
@@ -47,23 +47,21 @@ def check_leakage(manifest_path: Path, splits_path: Path, dataset_root: Path) ->
         if len(distinct_splits) > 1:
             leaks.append({"type": "exact_duplicate_cross_split", "images": assigned_splits})
 
-    # Near-duplicate cross-split check (perceptual hash).
+    # Near-duplicate cross-split check (perceptual hash). Uses the same
+    # LSH-banded candidate search as audit_vision_data.py at real dataset
+    # scale (see its module docstring for the approximation this implies),
+    # then discards same-split and unassigned pairs.
     phashes = {}
     for rec in images:
         try:
             phashes[rec["relpath"]] = perceptual_hash(dataset_root / rec["relpath"])
         except Exception:
             continue
-    paths = list(phashes.keys())
-    for i in range(len(paths)):
-        for j in range(i + 1, len(paths)):
-            p1, p2 = paths[i], paths[j]
-            s1, s2 = splits.get(p1, "unassigned"), splits.get(p2, "unassigned")
-            if s1 == "unassigned" or s2 == "unassigned" or s1 == s2:
-                continue
-            dist = hamming_distance(phashes[p1], phashes[p2])
-            if dist <= NEAR_DUP_HAMMING_THRESHOLD:
-                leaks.append({"type": "near_duplicate_cross_split", "a": {p1: s1}, "b": {p2: s2}, "hamming_distance": dist})
+    for p1, p2, dist in find_near_duplicate_pairs(phashes, threshold=NEAR_DUP_HAMMING_THRESHOLD):
+        s1, s2 = splits.get(p1, "unassigned"), splits.get(p2, "unassigned")
+        if s1 == "unassigned" or s2 == "unassigned" or s1 == s2:
+            continue
+        leaks.append({"type": "near_duplicate_cross_split", "a": {p1: s1}, "b": {p2: s2}, "hamming_distance": dist})
 
     # Same-scene-group cross-split check (optional "scene_group" metadata field).
     by_scene: dict[str, list[str]] = {}

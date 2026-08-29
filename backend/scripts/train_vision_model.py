@@ -59,8 +59,17 @@ def main():
              "produced NaN losses from the very first batch with AMP enabled -- a real numerical-stability "
              "issue on this older/low-VRAM card, not a flag left on by habit. fp32 is the safe default here.",
     )
+    parser.add_argument("--data", type=str, default="construction-ppe.yaml", help="Ultralytics data.yaml (relative path or Ultralytics dataset name). Override for continued-fine-tuning experiments on a different dataset.")
+    parser.add_argument("--weights", type=str, default="yolo11n.pt", help="Starting weights: 'yolo11n.pt' for COCO-pretrained-from-scratch, or a path to an existing checkpoint (e.g. models/artifacts/ppe-yolo11n.pt) for continued fine-tuning.")
+    parser.add_argument("--output-artifact", type=str, default=None, help="Output artifact filename under models/artifacts/. Defaults to ppe-yolo11n.pt (the active v1.1 path) ONLY for full backward compatibility with `make train-vision`; pass an explicit candidate name (e.g. ppe-yolo11n-v1.2-candidate.pt) for any experiment that must not overwrite the active artifact.")
+    parser.add_argument("--run-name", type=str, default="ppe-yolo11n", help="Ultralytics run/project subdirectory name under models/evaluation/vision_training_runs/")
+    parser.add_argument("--lr0", type=float, default=None, help="Initial learning rate override. Ultralytics default is 0.01; pass a smaller value for continued fine-tuning of an already-trained checkpoint.")
+    parser.add_argument("--no-registry-write", action="store_true", help="Skip writing models/registry.json. Use for any run whose result is a CANDIDATE artifact, not a promotion -- registry updates for candidates happen only after the promotion gate passes.")
+    parser.add_argument("--workers", type=int, default=8)
+    parser.add_argument("--cache", type=str, default="false", choices=["true", "false"])
     args = parser.parse_args()
     amp = args.amp == "true"
+    cache = args.cache == "true"
 
     import torch
     import ultralytics
@@ -75,12 +84,12 @@ def main():
         hardware = torch.cuda.get_device_name(0)
 
     print(f"Ultralytics {ultralytics.__version__}, torch {torch.__version__}, device={device} ({hardware})")
-    print("Downloading/locating the Construction-PPE dataset (published train/val/test split)...")
+    print(f"Data: {args.data} | Weights: {args.weights}")
 
-    model = YOLO("yolo11n.pt")
+    model = YOLO(args.weights)
 
-    results = model.train(
-        data="construction-ppe.yaml",
+    train_kwargs = dict(
+        data=args.data,
         epochs=args.epochs,
         patience=args.patience,
         batch=args.batch,
@@ -88,15 +97,22 @@ def main():
         seed=args.seed,
         device=device,
         amp=amp,
+        workers=args.workers,
+        cache=cache,
         project=str(EVAL_DIR / "vision_training_runs"),
-        name="ppe-yolo11n",
+        name=args.run_name,
         exist_ok=True,
     )
+    if args.lr0 is not None:
+        train_kwargs["lr0"] = args.lr0
+
+    results = model.train(**train_kwargs)
 
     save_dir = Path(results.save_dir)
     best_weights = save_dir / "weights" / "best.pt"
     ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
-    artifact_path = ARTIFACTS_DIR / "ppe-yolo11n.pt"
+    output_name = args.output_artifact or "ppe-yolo11n.pt"
+    artifact_path = ARTIFACTS_DIR / output_name
     artifact_path.write_bytes(best_weights.read_bytes())
     sha256 = hashlib.sha256(artifact_path.read_bytes()).hexdigest()
     artifact_size = artifact_path.stat().st_size
@@ -119,6 +135,14 @@ def main():
             rows = list(csv.DictReader(f))
         if rows:
             best_epoch = int(rows[-1].get("epoch", len(rows) - 1)) + 1  # 0-indexed in file
+
+    if args.no_registry_write:
+        print(f"\nArtifact: {artifact_path} ({artifact_size} bytes, sha256={sha256[:16]}...)")
+        print(f"Best epoch: {best_epoch} / requested {args.epochs}")
+        print(f"Training run dir: {save_dir}")
+        print("--no-registry-write set: models/registry.json left untouched. This is a CANDIDATE artifact; "
+              "promotion (updating registry.json's active pointer) happens only after the promotion gate passes.")
+        return
 
     registry = json.loads(REGISTRY_PATH.read_text()) if REGISTRY_PATH.exists() else {}
     registry["ppe_detector"] = {

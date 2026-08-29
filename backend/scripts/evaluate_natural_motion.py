@@ -10,6 +10,7 @@ track-ID continuity, and per-frame confidence, so a reviewer can judge the
 construction-to-factory domain gap qualitatively.
 """
 
+import argparse
 import json
 import sys
 import time
@@ -28,14 +29,26 @@ def main():
 
     from app.inference.vision_worker_impl import TrackDwell, load_model, process_frame
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model-path", type=str, default=None, help="Override artifact path (bypasses registry sha256 check). Used to evaluate a candidate artifact without touching models/registry.json.")
+    parser.add_argument("--out-name", type=str, default="natural_motion_report.json", help="Output filename under models/evaluation/.")
+    args = parser.parse_args()
+
     if not CLIP_PATH.exists():
         print(f"SKIPPED: {CLIP_PATH} not present.")
         report = {"status": "SKIPPED", "reason": "asset not present"}
         EVAL_DIR.mkdir(parents=True, exist_ok=True)
-        (EVAL_DIR / "natural_motion_report.json").write_text(json.dumps(report, indent=2))
+        (EVAL_DIR / args.out_name).write_text(json.dumps(report, indent=2))
         return
 
-    model, model_version, person_only = load_model()
+    model_path = Path(args.model_path) if args.model_path else None
+    model, model_version, person_only, status = load_model(model_path=model_path)
+    if model is None:
+        print(f"SKIPPED: model unavailable (status={status}) for path={model_path}")
+        report = {"status": "MODEL_UNAVAILABLE", "detector_status": str(status), "model_path": str(model_path) if model_path else None}
+        EVAL_DIR.mkdir(parents=True, exist_ok=True)
+        (EVAL_DIR / args.out_name).write_text(json.dumps(report, indent=2))
+        return
     if person_only:
         print("NOTE: fine-tuned PPE artifact unavailable; running COCO fallback (person-only).")
 
@@ -106,7 +119,7 @@ def main():
     }
 
     EVAL_DIR.mkdir(parents=True, exist_ok=True)
-    out_path = EVAL_DIR / "natural_motion_report.json"
+    out_path = EVAL_DIR / args.out_name
     out_path.write_text(json.dumps(report, indent=2, default=str))
     print(json.dumps(report, indent=2, default=str))
     print(f"\nWritten to {out_path}")

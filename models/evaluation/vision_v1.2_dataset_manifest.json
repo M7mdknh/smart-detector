@@ -1,0 +1,119 @@
+{
+  "source": {
+    "zip_path": "external-data/Industrial safety.v1i.yolov11.zip",
+    "zip_sha256": "dc69e7ee8c4bc7119d9179aeaf3a8ced6cd04142d592837f21af41f381b01a67",
+    "zip_size_bytes": 1755247321,
+    "roboflow_project": "https://universe.roboflow.com/mohammad-khaled/industrial-safety-prxgm-rzaw4/dataset/1",
+    "license": "MIT",
+    "export_format": "YOLOv11 (Roboflow)",
+    "declared_total_images": 28119,
+    "readme_preprocessing": [
+      "Auto-orientation of pixel data (EXIF-orientation stripping)",
+      "Resize to 640x640 (Stretch) -- NOT letterboxed/padded; aspect ratio is distorted by this stretch, disclosed as a data-quality caveat"
+    ],
+    "readme_augmentation": "None declared by Roboflow's own README, however manual inspection (see data_quality_findings) found baked-in 4-panel mosaic composites with noise/rotation in a meaningful fraction of images -- likely an artifact of an earlier augmentation pass whose OUTPUT was exported as if it were source data, not something this project applied."
+  },
+  "data_yaml": {
+    "raw_class_order": [
+      "hardhat",
+      "no_hardhat",
+      "person",
+      "safety_vest"
+    ],
+    "nc": 4
+  },
+  "canonical_mapping": {
+    "hardhat": "helmet",
+    "no_hardhat": "no_helmet",
+    "person": "person",
+    "safety_vest": "vest",
+    "canonical_runtime_order": [
+      "person",
+      "helmet",
+      "vest",
+      "no_helmet"
+    ],
+    "matches_registry_ppe_detector_runtime_classes": true,
+    "no_vest_class_introduced": false
+  },
+  "split_counts": {
+    "train": {
+      "images": 9856,
+      "labels": 9856
+    },
+    "valid": {
+      "images": 9097,
+      "labels": 9097
+    },
+    "test": {
+      "images": 9166,
+      "labels": 9166
+    }
+  },
+  "manual_class_semantics_confirmation": {
+    "method": "Rendered ground-truth boxes on real sample images per class and visually inspected (models/evaluation/vision_v1.2_data_audit/contact_sheets/, and ad-hoc single-example renders under external-data/inspect/ during this pass).",
+    "hardhat_is_head_mounted_helmet": true,
+    "no_hardhat_is_head_face_region": true,
+    "safety_vest_is_torso_region": true,
+    "person_boxes_reasonably_complete": true,
+    "images_genuinely_color_rgb_mode": true,
+    "letterboxed_grayscale_stretched_corruption": false,
+    "note": "Images are stored as RGB-mode files at 640x640 (see readme_preprocessing: stretch resize, not letterboxed padding), and class-to-box semantics are correct where checked. However, see data_quality_findings below for real, disclosed anomalies found beyond the specific corruption pattern (letterboxed grayscale) this check was designed to catch."
+  },
+  "data_quality_findings": {
+    "grayscale_content_despite_rgb_color_export": {
+      "method": "np.array(image.convert('RGB')); flagged 'grayscale-like' if mean(|R-G|)+mean(|G-B|) < 1.0 across the full frame. Deterministic seed=42 sample of 200 images per split.",
+      "by_split": {
+        "train": {
+          "grayscale_like": 130,
+          "sampled": 200,
+          "fraction": 0.65
+        },
+        "valid": {
+          "grayscale_like": 4,
+          "sampled": 200,
+          "fraction": 0.02
+        },
+        "test": {
+          "grayscale_like": 61,
+          "sampled": 200,
+          "fraction": 0.305
+        }
+      },
+      "interpretation": "A majority of TRAIN images (65%) and a meaningful fraction of TEST images (30.5%) are monochrome/IR/CCTV-derived content saved in an RGB container, while VALID is almost entirely true color (2%). This is a genuine, disclosed data-quality surprise: the requested 'color' export is not uniformly color, and the color/grayscale mix differs materially between splits (a train/valid distribution mismatch), which the promotion-gate evaluation must account for."
+    },
+    "mosaic_composite_images": {
+      "method": "Manual visual inspection of real sample images (external-data/inspect/no_hardhat_sample_*.png, external-data/inspect/random_*.png) rendered with ground-truth boxes.",
+      "finding": "A meaningful fraction of images (observed repeatedly across random and no_hardhat-containing samples) are 4-panel mosaic composites of unrelated scenes (e.g. a construction site tile next to an unrelated fashion/selfie photo tile), sometimes rotated and with added visual noise. Ground-truth boxes are placed correctly on the head/torso region within their own tile, but 3 of 4 panels are frequently off-domain (non-industrial) content. This looks like an upstream augmentation pass whose rendered output was exported as static images rather than applied only at training time.",
+      "impact": "Reduces effective real-world scene diversity/realism versus the raw image count, and means 'no_helmet' labels sometimes sit on incidental photos (e.g. a fashion selfie) rather than genuine industrial no-helmet scenes."
+    },
+    "high_fraction_of_unannotated_background_images": {
+      "images_missing_annotations": 13303,
+      "total_images": 28119,
+      "fraction": 0.473,
+      "finding": "47% of all pooled images have zero person/helmet/vest/no_helmet boxes. Filename inspection shows many are off-domain negative/background stock photos (e.g. wildfire/smoke images) -- the parent Roboflow project appears scoped to a broader 'industrial safety' concept (fire, smoke, falls) than just PPE compliance, of which this project only uses the 4 PPE-relevant classes."
+    },
+    "high_within_split_near_duplicate_density": {
+      "near_duplicate_pairs_found": 320381,
+      "hamming_threshold": 5,
+      "note": "Consistent with many images being consecutive-frame extractions from the same source videos (filenames like 'vlcsnap-...', 'youtube-...', '*_mp4-NN'). Cross-split leakage was separately checked (see leakage_check below) and found clean, i.e. Roboflow's own split assignment appears to keep same-video scene groups together."
+    },
+    "exact_duplicate_groups": 83
+  },
+  "leakage_check": {
+    "tool": "backend/scripts/vision_data/check_vision_leakage.py (extended with LSH banding for scale, see script docstring)",
+    "result": "PASS -- No train/val/test leakage detected (exit code 0)",
+    "blocked_training": false
+  },
+  "class_balance_instance_counts": {
+    "person": 10744,
+    "helmet": 7646,
+    "vest": 7571,
+    "no_helmet": 5310
+  },
+  "corrupt_images": 0,
+  "images_with_invalid_annotation_lines": 0,
+  "contact_sheets_dir": "models/evaluation/vision_v1.2_data_audit/contact_sheets/",
+  "raw_audit_report": "models/evaluation/vision_v1.2_data_audit/audit_report.json",
+  "prepared_manifest": "external-data/vision_manifests/industrial_safety_manifest.json (gitignored; regenerate via backend/scripts/vision_data/prepare_vision_data.py against the extracted+converted dataset, see this file's source section for the original zip sha256)"
+}

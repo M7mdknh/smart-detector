@@ -1,15 +1,57 @@
 # ADR 0002: Vision v2.0 roadmap (deferred, not executed)
 
-Status: **PROPOSED / DEFERRED**. Nothing in this document has been executed in
-this session. This ADR is a specification for a future contributor who has
-the things this sandbox does not: a GPU, Roboflow/Kaggle/HuggingFace
-credentials, and legal authority to clear video licensing. It supersedes any
-notion that these items were completed as part of the `assessment-submission-v2.0`
-release — that release ships only the restricted-zone rule, incident evidence
-images, the clean-environment dependency/test fix, the duplicate-weight
-cleanup, and the dataset tooling scaffold described in §4 below. No new YOLO
-model was trained, compared, or promoted in this session; the shipped
-detector remains `ppe-yolo11n.pt` (registry version 1.1, unchanged from
+Status: **PARTIALLY EXECUTED, CANDIDATE REJECTED**. A later session had GPU
+access (NVIDIA MX450) and Roboflow credentials, and did execute §2's dataset
+acquisition (the "Industrial Safety" dataset only, MIT license) and §1's
+single-stage retraining (not the two-stage architecture proposed below) as a
+genuine experiment. See "Update — v1.2 experiment executed and rejected"
+below for what actually happened. §3 (continuous interview video) remains
+unexecuted as of that same session — see `demo-assets/INTERVIEW_VIDEO_SOURCES.md`.
+The shipped detector remains `ppe-yolo11n.pt` (registry version 1.1); no
+promotion occurred.
+
+## Update — v1.2 experiment executed and rejected (see models/registry.json `ppe_detector.rejected_experiments`)
+
+A fine-tuning run was started from the v1.1 checkpoint on the Industrial
+Safety dataset (Roboflow Universe, MIT license; see
+`models/evaluation/vision_v1.2_dataset_manifest.json` for the full
+acquisition/leakage-check/subset-selection record), targeting 50 epochs. It
+was externally interrupted after 7 completed epochs because the projected
+MX450 runtime was unacceptable — this was **not** early stopping (no
+patience/plateau criterion fired), and 50 epochs were never claimed complete.
+The un-resumed, 7-epoch checkpoint was evaluated as an explicit early
+candidate (`models/artifacts/ppe-yolo11n-v1.2-epoch7-candidate.pt`) via:
+
+1. Validation-only threshold tuning (`models/evaluation/vision_v1.2_candidate_thresholds.json`).
+2. A comparative evaluation against active v1.1 on 4 sources — the original
+   construction-ppe test split, the Industrial-Safety dataset's own held-out
+   test split, and both bundled video clips
+   (`models/evaluation/vision_v1.2_comparative_evaluation.json`).
+3. A mechanical promotion gate (`backend/scripts/promote_vision_v1_2.py`,
+   `models/evaluation/vision_v1.2_promotion_decision.json`).
+
+**Result: REJECTED.** The candidate's `no_helmet` recall on the construction-ppe
+test split (0.25) did not improve over v1.1's own recall on that split (0.45),
+and person/helmet recall on that same split collapsed (0.81→0.0, 0.90→0.10) —
+expected for a detector trained only 7 of 50 planned epochs on a different
+dataset. No further training was performed (explicitly out of scope for that
+session). `models/registry.json`'s `ppe_detector` fields were never modified;
+v1.1 remains active. This result does not retire the two-stage proposal in §1
+below or the remaining datasets in §2 — it only closes out one single-stage,
+partial-training experiment on one of the four named datasets.
+
+## Original document (as written before the above update)
+
+Nothing below this line was executed as of the original ADR. This ADR is a
+specification for a future contributor who has the things this sandbox did
+not have at the time: a GPU, Roboflow/Kaggle/HuggingFace credentials, and
+legal authority to clear video licensing. It supersedes any notion that these
+items were completed as part of the `assessment-submission-v2.0` release —
+that release shipped only the restricted-zone rule, incident evidence images,
+the clean-environment dependency/test fix, the duplicate-weight cleanup, and
+the dataset tooling scaffold described in §4 below. No new YOLO model was
+trained, compared, or promoted in that session; the shipped detector remained
+`ppe-yolo11n.pt` (registry version 1.1, unchanged from
 `assessment-submission-v1.0`).
 
 ## Context

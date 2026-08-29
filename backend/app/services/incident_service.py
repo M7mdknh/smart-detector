@@ -74,16 +74,28 @@ def _dedup_key(zone_id: str, scope: str) -> str:
 
 
 def _latest_vision_rows(session: Session, zone_id: str, now: datetime, window_seconds: float = 30.0) -> list[VisionEvidenceRow]:
-    # Only SIMULATION_GROUND_TRUTH drives incident logic in P0: the bundled CV replay
-    # shows an unrelated construction clip, not this simulated worker, so letting it
-    # open/clear incidents about "the" worker would be misleading (CLAUDE.md invariant #3).
-    # CV_MODEL evidence still populates the camera panel independently, with its own provenance badge.
+    # Only SIMULATION_GROUND_TRUTH drives incident logic by default: the bundled CV
+    # replay (replay.mp4) shows an unrelated construction clip, not the simulated
+    # worker, so letting it open/clear incidents about "the" worker would be
+    # misleading (CLAUDE.md invariant #3). CV_MODEL evidence still populates the
+    # camera panel independently, with its own provenance badge.
+    #
+    # settings.interview_demo_mode (default False) is the single, explicit
+    # exception: it is turned on only when the vision worker has genuinely been
+    # pointed at real, licensed continuous footage that IS this camera's feed
+    # (see docs/INTERVIEW_DEMO.md), in which case CV_MODEL evidence is just as
+    # honest a driver of incidents as SIMULATION_GROUND_TRUTH is in the default
+    # demo -- so it is included too, never substituted for it.
+    allowed_sources = ["SIMULATION_GROUND_TRUTH"]
+    if get_settings().interview_demo_mode:
+        allowed_sources.append("CV_MODEL")
+
     since = now - timedelta(seconds=window_seconds)
     stmt = select(VisionEvidenceRow).where(
         VisionEvidenceRow.zone_id == zone_id,
         VisionEvidenceRow.event_time >= since,
         VisionEvidenceRow.event_time <= now,  # exclude rows from a different run whose clock ran ahead of `now`
-        VisionEvidenceRow.source == "SIMULATION_GROUND_TRUTH",
+        VisionEvidenceRow.source.in_(allowed_sources),
     ).order_by(VisionEvidenceRow.event_time.desc())
     return list(session.execute(stmt).scalars())
 

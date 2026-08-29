@@ -240,6 +240,7 @@ def _evidence_image_to_dict(img) -> dict:
         "source": img.source,
         "source_frame_id": img.source_frame_id,
         "sha256": img.sha256,
+        "is_real_camera_frame": img.is_real_camera_frame,
         "url": f"/api/v1/incidents/{img.incident_id}/evidence",
     }
 
@@ -303,7 +304,7 @@ def get_incident_report_csv(incident_id: str, session: Annotated[Session, Depend
         "explanation", "recommended_action", "version",
         "evidence_image_id", "evidence_image_reason", "evidence_image_track_id",
         "evidence_image_helmet_state", "evidence_image_vest_state", "evidence_image_model_version",
-        "evidence_image_source", "evidence_image_sha256",
+        "evidence_image_source", "evidence_image_sha256", "evidence_image_is_real_camera_frame",
     ])
     base = [
         row.incident_id, row.type, row.zone_id, row.gas, row.severity, row.confidence, row.state,
@@ -314,9 +315,9 @@ def get_incident_report_csv(incident_id: str, session: Annotated[Session, Depend
     ]
     if row.evidence_images:
         for img in row.evidence_images:
-            writer.writerow(base + [img.id, img.reason, img.track_id, img.ppe_helmet_state, img.ppe_vest_state, img.model_version, img.source, img.sha256])
+            writer.writerow(base + [img.id, img.reason, img.track_id, img.ppe_helmet_state, img.ppe_vest_state, img.model_version, img.source, img.sha256, img.is_real_camera_frame])
     else:
-        writer.writerow(base + ["", "", "", "", "", "", "", ""])
+        writer.writerow(base + ["", "", "", "", "", "", "", "", ""])
 
     return Response(content=buf.getvalue(), media_type="text/csv", headers={"Content-Disposition": f"attachment; filename={incident_id}-report.csv"})
 

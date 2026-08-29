@@ -177,19 +177,40 @@ def load_model(model_path=None):
     returns (None, None, True, ModelStatus.UNAVAILABLE) and makes no network call
     and constructs no model object; the caller (run_replay_loop) must keep the
     camera/replay stream running and report detector health separately, without
-    fabricating PPE compliance."""
-    settings = get_settings()
-    path = model_path or (settings.models_dir / "artifacts" / "ppe-yolo11n.pt")
-    relative_path = "models/artifacts/ppe-yolo11n.pt"  # logged instead of the absolute path
+    fabricating PPE compliance.
 
-    expected_sha256 = None
+    The DEFAULT artifact filename (used when model_path is not given) is read
+    from models/registry.json's "ppe_detector.artifact_path" field, not
+    hardcoded -- this is what lets a promotion switch the active model by
+    editing the registry pointer alone, without overwriting any artifact file
+    on disk. If the registry is missing/unreadable, this falls back to the
+    v1.1 filename "ppe-yolo11n.pt" (the only artifact ever bundled before this
+    field existed)."""
+    settings = get_settings()
+
+    ppe_detector_meta: dict = {}
     registry_path = settings.model_registry_path
     if registry_path.exists():
         try:
             registry = json.loads(registry_path.read_text())
-            expected_sha256 = registry.get("ppe_detector", {}).get("sha256")
+            ppe_detector_meta = registry.get("ppe_detector", {})
         except Exception:
             logger.exception("failed to read model registry for ppe_detector")
+
+    expected_sha256 = ppe_detector_meta.get("sha256")
+    registry_artifact_path = ppe_detector_meta.get("artifact_path")
+    default_filename = Path(registry_artifact_path).name if registry_artifact_path else "ppe-yolo11n.pt"
+    registry_version = ppe_detector_meta.get("version", "1.1")
+
+    path = model_path or (settings.models_dir / "artifacts" / default_filename)
+    relative_path = f"models/artifacts/{path.name}"  # logged instead of the absolute path
+    # Checksum verification gates any path that CLAIMS to be the registry's
+    # currently active artifact -- whether resolved as the default or passed
+    # explicitly with the same filename (e.g. a corrupted/tampered copy of
+    # the active weights). A path with a DIFFERENT filename (e.g. an
+    # unpromoted candidate under its own name) is never checked against the
+    # active registry's expected hash -- it never claimed to be that artifact.
+    claims_to_be_registry_default = path.name == default_filename
 
     if not path.exists():
         logger.error(
@@ -198,8 +219,8 @@ def load_model(model_path=None):
         )
         return None, None, True, ModelStatus.UNAVAILABLE
 
-    if expected_sha256:
-        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    if claims_to_be_registry_default and expected_sha256:
         if digest != expected_sha256:
             logger.error(
                 "PPE model artifact checksum mismatch; detector unavailable, no fallback download attempted",
@@ -212,12 +233,35 @@ def load_model(model_path=None):
                 },
             )
             return None, None, True, ModelStatus.UNAVAILABLE
-    else:
+    elif claims_to_be_registry_default and not expected_sha256:
         logger.warning("model registry missing ppe_detector sha256; loading artifact without checksum verification")
 
     from ultralytics import YOLO
 
-    return YOLO(str(path)), "ppe-yolo11n-1.1", False, ModelStatus.OK
+    # Only label the model with the registry's active version when this really
+    # is the registry-verified artifact (sha256 matches, whether resolved as
+    # the default or passed explicitly); a mismatched override (e.g.
+    # evaluating an unpromoted candidate) is labelled from its own filename
+    # instead of borrowing the active version's name.
+    if expected_sha256 and digest == expected_sha256:
+        model_version = f"ppe-yolo11n-{registry_version}"
+    else:
+        model_version = path.stem
+
+    # The checksum gate above only protects the registry-verified default
+    # path; an explicit override skips it deliberately (candidate evaluation).
+    # Either way, never let a corrupt/unreadable checkpoint crash the caller --
+    # a file that merely LOOKS present but isn't a real checkpoint must still
+    # degrade honestly instead of raising out of this function.
+    try:
+        model = YOLO(str(path))
+    except Exception:
+        logger.exception(
+            "PPE model artifact failed to load; detector unavailable",
+            extra={"extra_fields": {"artifact_path": relative_path}},
+        )
+        return None, None, True, ModelStatus.UNAVAILABLE
+    return model, model_version, False, ModelStatus.OK
 
 
 def parse_detections(model, results, person_only: bool):
@@ -359,6 +403,28 @@ def associate_and_dwell(
     return rows
 
 
+def process_frame_full(
+    model,
+    frame,
+    frame_id: int,
+    event_time: datetime,
+    tracks: dict[int, TrackDwell],
+    person_only: bool,
+    model_version: str,
+    camera_id: str = "camera-1",
+    zone_id: str = "zone-1",
+):
+    """Like process_frame, but also returns the raw (persons, ppe_candidates)
+    the evidence rows were built from, so a caller that needs to render an
+    annotated frame (app/inference/frame_annotation.py) doesn't have to re-run
+    detection. process_frame() below is the thin, signature-stable wrapper
+    used by process_frame's existing callers/tests."""
+    results = model.track(frame, persist=True, verbose=False, conf=BASE_TRACK_CONF, iou=NMS_IOU, tracker=TRACKER_CONFIG_PATH)
+    persons, ppe_candidates = parse_detections(model, results, person_only)
+    rows = associate_and_dwell(persons, ppe_candidates, frame_id, event_time, tracks, model_version, camera_id, zone_id)
+    return rows, persons, ppe_candidates
+
+
 def process_frame(
     model,
     frame,
@@ -372,9 +438,10 @@ def process_frame(
 ) -> list[VisionEvidenceRow]:
     """Runs the REAL detector+tracker on one frame and applies association/dwell.
     This is the function the principal end-to-end test calls -- no mocked detector."""
-    results = model.track(frame, persist=True, verbose=False, conf=BASE_TRACK_CONF, iou=NMS_IOU, tracker=TRACKER_CONFIG_PATH)
-    persons, ppe_candidates = parse_detections(model, results, person_only)
-    return associate_and_dwell(persons, ppe_candidates, frame_id, event_time, tracks, model_version, camera_id, zone_id)
+    rows, _persons, _ppe_candidates = process_frame_full(
+        model, frame, frame_id, event_time, tracks, person_only, model_version, camera_id, zone_id
+    )
+    return rows
 
 
 def run_replay_loop(worker) -> None:
@@ -427,10 +494,36 @@ def run_replay_loop(worker) -> None:
         session = get_session()
         try:
             event_time = datetime.now(timezone.utc)
-            rows = process_frame(model, frame, frame_id, event_time, tracks, person_only, model_version)
+            rows, persons, ppe_candidates = process_frame_full(model, frame, frame_id, event_time, tracks, person_only, model_version)
             for row in rows:
                 session.add(row)
             worker.observed_fps = 1.0 / max(1e-6, time.monotonic() - now_wall + min_interval)
             session.commit()
+
+            if settings.interview_demo_mode:
+                _cache_annotated_frame(frame, persons, ppe_candidates, tracks, model_version, event_time, frame_id)
         finally:
             session.close()
+
+
+def _cache_annotated_frame(frame, persons, ppe_candidates, tracks, model_version, event_time, frame_id, camera_id: str = "camera-1") -> None:
+    """Renders the real annotated frame and caches it (app/inference/frame_cache.py)
+    so app/services/evidence_image.py can attach a genuine captured frame to a
+    CV_MODEL-driven incident. Only called when interview_demo_mode is on -- the
+    default /dashboard simulator demo never pays this extra render cost, and
+    its incidents are SIMULATION_GROUND_TRUTH-driven anyway (see
+    app/services/incident_service.py::_latest_vision_rows), so this cache would
+    never be consulted for them. Best-effort: a rendering failure must never
+    break frame ingestion."""
+    try:
+        import cv2
+
+        from app.inference.frame_annotation import render_annotated_frame
+        from app.inference.frame_cache import set_latest_frame
+
+        annotated = render_annotated_frame(frame, persons, ppe_candidates, tracks, get_zone_config(), model_version, event_time, frame_id)
+        ok, buf = cv2.imencode(".jpg", annotated, [cv2.IMWRITE_JPEG_QUALITY, 90])
+        if ok:
+            set_latest_frame(camera_id, buf.tobytes(), frame_id, event_time)
+    except Exception:
+        logger.exception("failed to render/cache annotated frame for interview-demo evidence capture")

@@ -40,6 +40,7 @@ output/
 models/training/data/
 models/training/datasets/
 datasets/
+external-data/
 *.zip
 frontend/.playwright/
 frontend/tests/.auth/
@@ -67,13 +68,30 @@ models/artifacts/*
 models/evaluation/vision_training_runs/
 
 # Ultralytics also writes its own validation-run plots/images here by default
-# (backend/runs/detect/val/*) whenever model.val()/evaluate_vision_model.py runs
-# from backend/ -- reproducible, not referenced by any doc, not part of the
-# intended repo structure (CLAUDE.md).
+# (backend/runs/detect/val/*, or repo-root runs/detect/val/* depending on the
+# invoking shell's cwd) whenever model.val()/evaluate_vision_model.py runs --
+# reproducible, not referenced by any doc, not part of the intended repo
+# structure (CLAUDE.md).
 backend/runs/
+/runs/
+
+# Raw per-image audit output (backend/scripts/vision_data/audit_vision_data.py):
+# ~80MB of per-file JSON records for every image in the v1.2 candidate dataset --
+# reproducible via `make audit-vision-data`, and the actionable summary is
+# already captured in the small contact_sheets/ PNGs kept alongside it and in
+# models/evaluation/vision_v1.2_leakage_check.json / _subset_selection.json.
+models/evaluation/vision_v1.2_data_audit/audit_report.json
 
 # OS and editor files
 .DS_Store
 .idea/
 .vscode/
 .project-git/
+
+# Raw user-supplied-footage staging area: kept local-only until each clip's
+# provenance/license is confirmed and (if cleared) copied into
+# demo-assets/interview_sources/ under its own documented filename -- see
+# demo-assets/INTERVIEW_VIDEO_SOURCES.md. The staging copy is never itself
+# the canonical source, so it is never committed even after clearing.
+demo-assets/user-input/
+demo-assets/incoming_footage/

@@ -46,6 +46,18 @@ class Settings(BaseSettings):
     vision_replay_path: Path = REPO_ROOT / "demo-assets" / "replay.mp4"
     vision_target_fps: float = 10.0
 
+    # Interview-demonstration mode (see docs/INTERVIEW_DEMO.md): OFF by default,
+    # preserving the standard /dashboard simulator demo's honesty guarantee that
+    # only SIMULATION_GROUND_TRUTH vision evidence drives incidents (the bundled
+    # replay.mp4 shows an unrelated clip, not the simulated worker -- CLAUDE.md
+    # invariant #3). When explicitly enabled, the vision worker is expected to be
+    # pointed (via vision_replay_path) at real, licensed continuous footage that
+    # genuinely corresponds to this camera feed, and CV_MODEL vision evidence is
+    # also allowed to open/update incidents (app/services/incident_service.py)
+    # and have its real annotated frame captured as incident evidence
+    # (app/services/evidence_image.py) instead of a schematic reconstruction.
+    interview_demo_mode: bool = False
+
     # incident evidence images (rendered annotated snapshots, see app/services/evidence_image.py)
     incident_evidence_dir: Path = BACKEND_ROOT / "data" / "incident-evidence"
 

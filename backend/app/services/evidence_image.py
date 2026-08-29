@@ -1,23 +1,33 @@
 """Renders and saves one annotated evidence image per logical incident event
 (creation, or a meaningful severity escalation) -- never one per frame.
 
-Honesty note (CLAUDE.md invariant #3, "no fake CV"): the incidents this
-system opens for worker-safety conditions are driven by SIMULATION_GROUND_TRUTH
-vision evidence (the bundled CV replay shows an unrelated construction clip,
-never correlated with the simulated worker -- see
-app/services/incident_service.py's `_latest_vision_rows`). There is therefore
-no real captured camera frame to attach to a ground-truth-driven incident.
-Rather than fabricate a "camera frame" that never existed, this module renders
-a labelled schematic snapshot (zone outline, worker marker/box, burned-in
-text: incident type, severity, zone, track ID, timestamp, PPE state,
-confidence, model/source, alert description) from the same evidence data that
-drove the incident decision. The image and every burned-in field are always
-clearly attributed to their real source (SIMULATION_GROUND_TRUTH or CV_MODEL,
-whichever produced the evidence row) -- never presented as an unlabelled
-camera capture.
+Honesty note (CLAUDE.md invariant #3, "no fake CV"): by default, incidents
+this system opens for worker-safety conditions are driven by
+SIMULATION_GROUND_TRUTH vision evidence (the bundled CV replay shows an
+unrelated construction clip, never correlated with the simulated worker --
+see app/services/incident_service.py's `_latest_vision_rows`). There is
+therefore no real captured camera frame to attach to a ground-truth-driven
+incident in that mode. Rather than fabricate a "camera frame" that never
+existed, this module renders a labelled schematic snapshot (zone outline,
+worker marker/box, burned-in text: incident type, severity, zone, track ID,
+timestamp, PPE state, confidence, model/source, alert description) from the
+same evidence data that drove the incident decision.
+
+When settings.interview_demo_mode is on (see docs/INTERVIEW_DEMO.md) and the
+triggering evidence row's source is CV_MODEL, a real captured frame DOES
+exist -- the vision worker caches its own already-annotated frame
+(app/inference/frame_cache.py) for exactly this purpose -- so that genuine
+frame is saved instead of a schematic. If no cached frame is available near
+the incident's timestamp (a genuine gap, e.g. the worker restarted), this
+degrades honestly to the schematic rather than fabricating a capture; the
+schematic image itself makes this fallback explicit in its burned-in text.
+The image and every burned-in field are always clearly attributed to their
+real source (SIMULATION_GROUND_TRUTH or CV_MODEL, whichever produced the
+evidence row) -- never presented as an unlabelled camera capture.
 """
 
 import hashlib
+import io
 import uuid
 from dataclasses import dataclass
 
@@ -103,20 +113,51 @@ def render_evidence_image(incident: IncidentRow, ctx: EvidenceContext) -> Image.
     return img
 
 
+def _try_real_frame_bytes(row: VisionEvidenceRow | None, incident: IncidentRow) -> bytes | None:
+    """Returns real annotated-frame JPEG bytes captured by the vision worker
+    (app/inference/frame_cache.py) if interview_demo_mode is on, the triggering
+    row is genuinely CV_MODEL, and a recent-enough frame was cached -- else
+    None (never fabricated)."""
+    if row is None or row.source != "CV_MODEL":
+        return None
+    if not get_settings().interview_demo_mode:
+        return None
+    try:
+        from app.inference.frame_cache import get_latest_frame
+
+        cached = get_latest_frame(row.camera_id, incident.updated_at)
+        if cached is None:
+            return None
+        jpeg_bytes, _frame_id, _event_time = cached
+        return jpeg_bytes
+    except Exception:
+        return None
+
+
 def save_evidence_image(session, incident: IncidentRow, ctx: EvidenceContext) -> IncidentEvidenceImageRow:
-    """Renders, writes to disk under settings.incident_evidence_dir, and records
-    a row in incident_evidence_images. Never raises on a rendering hiccup in a
-    way that would fail the surrounding incident transaction -- callers should
-    treat this as best-effort and log failures, since evidence capture must
-    never block the safety-critical incident write itself."""
+    """Renders (or, when a genuine CV_MODEL-sourced frame is available in
+    interview_demo_mode, uses the real captured frame verbatim), writes to disk
+    under settings.incident_evidence_dir, and records a row in
+    incident_evidence_images. Never raises on a rendering hiccup in a way that
+    would fail the surrounding incident transaction -- callers should treat
+    this as best-effort and log failures, since evidence capture must never
+    block the safety-critical incident write itself."""
     settings = get_settings()
     settings.incident_evidence_dir.mkdir(parents=True, exist_ok=True)
 
-    img = render_evidence_image(incident, ctx)
     file_id = uuid.uuid4().hex[:8]
     filename = f"{incident.incident_id}-{file_id}.jpg"
     path = settings.incident_evidence_dir / filename
-    img.save(path, format="JPEG", quality=90)
+
+    real_frame = _try_real_frame_bytes(ctx.vision_row, incident)
+    is_real_frame = real_frame is not None
+    if is_real_frame:
+        path.write_bytes(real_frame)
+    else:
+        img = render_evidence_image(incident, ctx)
+        buf = io.BytesIO()
+        img.save(buf, format="JPEG", quality=90)
+        path.write_bytes(buf.getvalue())
 
     digest = hashlib.sha256(path.read_bytes()).hexdigest()
     row = ctx.vision_row
@@ -137,6 +178,7 @@ def save_evidence_image(session, incident: IncidentRow, ctx: EvidenceContext) ->
         source_frame_id=row.frame_id if row else None,
         file_path=f"data/incident-evidence/{filename}",
         sha256=digest,
+        is_real_camera_frame=is_real_frame,
     )
     session.add(image_row)
     return image_row

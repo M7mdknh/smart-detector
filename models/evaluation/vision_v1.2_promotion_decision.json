@@ -1,0 +1,61 @@
+{
+  "decision": "REJECTED",
+  "gate_result": {
+    "checks": {
+      "no_helmet_recall_improves": {
+        "v1_1": 0.45,
+        "v1_2_candidate": 0.25,
+        "baseline_reference": 0.175,
+        "pass": false
+      },
+      "no_helmet_precision_not_collapsed": {
+        "v1_1": 0.15517241379310345,
+        "v1_2_candidate": 0.20833333333333334,
+        "pass": true
+      },
+      "no_material_person_helmet_vest_regression": {
+        "per_class_per_source": {
+          "source_1_construction_ppe_test_split:person": {
+            "v1_1_recall": 0.8135593220338984,
+            "v1_2_candidate_recall": 0.0,
+            "drop": 0.8135593220338984,
+            "pass": false
+          },
+          "source_1_construction_ppe_test_split:helmet": {
+            "v1_1_recall": 0.9010416666666666,
+            "v1_2_candidate_recall": 0.09895833333333333,
+            "drop": 0.8020833333333333,
+            "pass": false
+          },
+          "source_1_construction_ppe_test_split:vest": {
+            "v1_1_recall": 0.8651685393258427,
+            "v1_2_candidate_recall": 0.5842696629213483,
+            "drop": 0.2808988764044944,
+            "pass": false
+          },
+          "source_2_industrial_safety_test_split:person": {
+            "v1_1_recall": 0.0,
+            "v1_2_candidate_recall": 0.1545990031717263,
+            "drop": -0.1545990031717263,
+            "pass": true
+          },
+          "source_2_industrial_safety_test_split:helmet": {
+            "v1_1_recall": 0.3084452975047985,
+            "v1_2_candidate_recall": 0.19328214971209212,
+            "drop": 0.11516314779270637,
+            "pass": false
+          },
+          "source_2_industrial_safety_test_split:vest": {
+            "v1_1_recall": 0.3333333333333333,
+            "v1_2_candidate_recall": 0.29417857882742904,
+            "drop": 0.03915475450590428,
+            "pass": true
+          }
+        },
+        "pass": false
+      }
+    },
+    "overall_pass": false
+  },
+  "decided_at": "2026-08-29T15:57:55Z"
+}

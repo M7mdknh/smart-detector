@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import JSON, Float, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import JSON, Boolean, Float, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.storage.db import Base, UTCDateTime
@@ -147,6 +147,10 @@ class IncidentEvidenceImageRow(Base):
     source_frame_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     file_path: Mapped[str] = mapped_column(String(256))  # relative to backend/, never a raw client-supplied path
     sha256: Mapped[str] = mapped_column(String(64))
+    # True only when this image is a genuine captured/annotated camera frame
+    # (interview_demo_mode, CV_MODEL source -- see app/inference/frame_cache.py);
+    # False for the default schematic reconstruction (see app/services/evidence_image.py).
+    is_real_camera_frame: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
 
     incident: Mapped["IncidentRow"] = relationship(back_populates="evidence_images")
 
