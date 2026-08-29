@@ -106,7 +106,12 @@ importantly, the model-artifact allowlist was widened: it previously excluded th
 artifacts and both PPE-detector version files entirely via `models/artifacts/*`, which would
 have silently dropped required, checksum-verified artifacts from the archive).
 
-- **Commit**: `1ae6e560504025daba53c0c08577c800c6b23f7d`
+- **Commit**: `82cf3d272fdc1b4f8c9b9eab0ab3a5962748a6b4` (this documentation update is itself
+  part of the tagged commit, so the archive/checksum/verification figures below were computed
+  against the immediately-prior commit `1ae6e560504025daba53c0c08577c800c6b23f7d` and then the
+  tag was moved to this final commit; the file contents relevant to those figures — everything
+  except this manifest and `docs/FINAL_VERIFICATION.md` themselves — are unchanged between the
+  two, so the artifact/test/demo verification below remains accurate for the tagged commit)
 - **Tag**: `assessment-submission-v1.0` (annotated, points to the commit above)
 - **Tracked files**: 198 (`git ls-files | wc -l`)
 - **Archive**: `factory-safety-sentinel-submission-v1.0.tar.gz`, built with
