@@ -131,6 +131,10 @@ Every decision below reflects an actual choice made and preserved in the reposit
 
 ## 6. System Architecture
 
+![Factory Safety Sentinel system architecture — two independent evidence streams (sensor and vision) converge on one deterministic risk/incident policy, feeding the database, WebSocket hub, dashboard, digital twin, and Docker deployment](screenshots/final/architecture_diagram.png)
+
+The rendered diagram above is the authoritative reference for PDF/DOCX readers; the equivalent Mermaid source below renders natively on GitHub's web view of this file.
+
 ```mermaid
 flowchart TD
     A[Simulator engine] -->|POST /sensor-readings| B[Ingestion service]

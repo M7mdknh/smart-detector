@@ -1,6 +1,7 @@
 """Converts docs/FINAL_PROJECT_REPORT.md to a print-styled HTML file for PDF
 rendering (scripts/presentation/render_report_pdf.mjs) and for visual review.
 """
+import re
 import sys
 from pathlib import Path
 
@@ -12,6 +13,10 @@ OUT = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("/tmp/report.html")
 
 md_text = SRC.read_text()
 body_html = markdown.markdown(md_text, extensions=["tables", "fenced_code", "sane_lists"])
+# Markdown image paths are relative to docs/ (where GitHub renders this file from);
+# rewrite to absolute file:// paths so Playwright resolves them from the scratchpad HTML.
+docs_dir = SRC.parent
+body_html = re.sub(r'src="screenshots/', f'src="file://{docs_dir}/screenshots/', body_html)
 
 CSS = """
 @page { size: Letter; margin: 20mm 14mm 20mm 14mm; }
@@ -33,6 +38,7 @@ p { margin: 8px 0; }
 code { background: #f1f5f9; padding: 1px 5px; border-radius: 4px; font-size: 9.5pt; word-break: break-word; }
 pre { background: #0f1c2e; color: #e2e8f0; padding: 12px 14px; border-radius: 8px; overflow-x: auto; font-size: 9pt; page-break-inside: avoid; max-width: 760px; }
 pre code { background: none; color: inherit; padding: 0; }
+img { max-width: 100%; display: block; margin: 14px auto; border-radius: 6px; border: 1px solid #cbd5e1; page-break-inside: avoid; }
 table { border-collapse: collapse; table-layout: fixed; width: 100%; margin: 14px 0; font-size: 7.3pt; page-break-inside: avoid; }
 th, td { border: 1px solid #cbd5e1; padding: 3px 5px; text-align: left; vertical-align: top; word-wrap: break-word; overflow-wrap: break-word; }
 th { background: #f1f5f9; font-weight: 700; }

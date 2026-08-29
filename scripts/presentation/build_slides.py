@@ -179,41 +179,72 @@ add("03_scope", html,
     answer="The assessment's P0 scope is one workcell/camera/gas-zone end-to-end and fully tested, rather than partial multi-entity support — CLAUDE.md's own frozen-scope decision, to keep the vertical slice complete and defensible.")
 
 # =============================================================================
-# SLIDE 4 — Architecture
+# SLIDE 4 — Architecture (elaborated: every stage named, both evidence paths, storage + surfaces)
 # =============================================================================
 def flow_box(label, color="orange"):
     return f'<div class="flow-step" style="border-color:var(--{color});color:var(--{color});">{label}</div>'
 
 
+def mini_box(label, color="white", dashed=False):
+    border = f"var(--{color})" if color != "white" else "var(--border)"
+    text_color = f"var(--{color})" if color != "white" else "var(--white)"
+    style = f"border:1.5px {'dashed' if dashed else 'solid'} {border};color:{text_color};"
+    return f'<div style="{style}background:var(--navy-2);border-radius:8px;padding:8px 10px;font-size:14px;font-weight:700;text-align:center;">{label}</div>'
+
+
+def down_arrow():
+    return '<div style="text-align:center;color:var(--orange);font-size:16px;line-height:1;">↓</div>'
+
+
+sensor_stages = [
+    ("Simulator engine (seeded, deterministic)", "orange"),
+    ("Ingestion service — POST /sensor-readings (idempotent)", "white"),
+    ("sensor_readings (SQLite)", "white"),
+    ("Contracts + validation (Pydantic v2)", "white"),
+    ("Physics forecast (mass-balance ODE)", "yellow"),
+    ("GRU residual model / physics-only fallback", "yellow"),
+    ("XGBoost leak classifier / rule fallback", "yellow"),
+]
+vision_stages = [
+    ("Camera / bundled replay video", "orange"),
+    ("Vision worker — YOLO11n detection", "white"),
+    ("ByteTrack — anonymous worker tracking", "white"),
+    ("One-to-one PPE association (helmet/vest)", "white"),
+    ("Zone membership (point-in-polygon, dwell)", "white"),
+    ("vision_evidence (CV_MODEL / SIMULATION_GROUND_TRUTH)", "white"),
+    ("Evidence storage — real frame or schematic", "white"),
+]
+sensor_col = "".join(mini_box(l, c) + down_arrow() for l, c in sensor_stages)[:-len(down_arrow())]
+vision_col = "".join(mini_box(l, c) + down_arrow() for l, c in vision_stages)[:-len(down_arrow())]
+
 html = f"""<div class="slide">
   {header("Complete Solution Overview", 4)}
-  <h2>End-to-end architecture</h2>
-  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:28px;margin-top:8px;">
-    <div class="flow" style="justify-content:center;">
-      {flow_box("Sensors / Simulator")}<div class="flow-arrow">→</div>
-      {flow_box("Backend ingestion")}<div class="flow-arrow">→</div>
-      {flow_box("Physics + XGBoost + GRU")}<div class="flow-arrow">→</div>
-      {flow_box("Risk / incident policy", "yellow")}
+  <h2>End-to-end architecture — every stage, both evidence paths</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:16px;">
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <div style="color:var(--gray);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;text-align:center;">Sensor path</div>
+      {sensor_col}
     </div>
-    <div class="flow" style="justify-content:center;">
-      {flow_box("Camera / video")}<div class="flow-arrow">→</div>
-      {flow_box("YOLO11n + ByteTrack")}<div class="flow-arrow">→</div>
-      {flow_box("PPE / zone evidence")}<div class="flow-arrow">→</div>
-      {flow_box("Risk / incident policy", "yellow")}
-    </div>
-    <div class="flow" style="justify-content:center;">
-      {flow_box("Risk / incident policy", "yellow")}<div class="flow-arrow">→</div>
-      {flow_box("Database + WebSocket", "green")}<div class="flow-arrow">→</div>
-      {flow_box("Manager dashboard", "green")}<div class="flow-arrow">+</div>
-      {flow_box("Simulation / digital twin", "green")}
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <div style="color:var(--gray);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;text-align:center;">Vision path</div>
+      {vision_col}
     </div>
   </div>
-  <div class="card" style="margin-top:8px;">
-    <p style="font-size:19px;">One ingestion contract for both paths (CLAUDE.md invariant #1): simulator readings and real
-    camera/replay frames flow through the same versioned pipeline into the same risk/incident engine —
-    a real device could be swapped in without changing the backend.</p>
+  <div style="text-align:center;color:var(--orange);font-size:16px;margin-top:6px;">↓</div>
+  <div style="display:flex;justify-content:center;">
+    <div style="border:2px solid var(--yellow);color:var(--yellow);background:var(--navy-3);border-radius:8px;padding:10px 30px;font-size:16px;font-weight:800;">Deterministic risk / severity policy (versioned rules)</div>
   </div>
-  {footer()}
+  <div style="text-align:center;color:var(--orange);font-size:16px;">↓</div>
+  <div style="display:flex;justify-content:center;">
+    <div style="border:2px solid var(--red);color:var(--red);background:var(--navy-3);border-radius:8px;padding:10px 30px;font-size:16px;font-weight:800;">Incident service — dedup, audit trail</div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:10px;">
+    {mini_box("incidents / audit_events (SQLite, Alembic)", "green", dashed=True)}
+    {mini_box("WebSocket hub (+ REST poll fallback)", "green")}
+    {mini_box("React dashboard — /dashboard", "green")}
+    {mini_box("Three.js digital twin — /simulation", "green")}
+  </div>
+  {footer("One ingestion contract for both paths — CLAUDE.md invariant #1")}
 </div>"""
 add("04_architecture", html,
     say="Two parallel evidence streams — gas sensors and camera — both terminate in one deterministic risk/incident policy, which writes to the database and pushes live WebSocket updates to the dashboard and simulation UI.",

@@ -197,6 +197,16 @@ def main():
             i += 1
             continue
 
+        img_match = re.match(r"^!\[.*?\]\((.+?)\)$", stripped)
+        if img_match:
+            img_path = (SRC.parent / img_match.group(1)).resolve()
+            if img_path.exists():
+                doc.add_picture(str(img_path), width=Inches(6.2))
+                last_p = doc.paragraphs[-1]
+                last_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            i += 1
+            continue
+
         if stripped.startswith("- ") or stripped.startswith("* "):
             p = doc.add_paragraph(style="List Bullet")
             add_inline_runs(p, stripped[2:])
