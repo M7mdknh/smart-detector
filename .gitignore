@@ -66,6 +66,12 @@ models/artifacts/*
 # reports under models/evaluation/ are kept.
 models/evaluation/vision_training_runs/
 
+# Ultralytics also writes its own validation-run plots/images here by default
+# (backend/runs/detect/val/*) whenever model.val()/evaluate_vision_model.py runs
+# from backend/ -- reproducible, not referenced by any doc, not part of the
+# intended repo structure (CLAUDE.md).
+backend/runs/
+
 # OS and editor files
 .DS_Store
 .idea/
