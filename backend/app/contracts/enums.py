@@ -1,0 +1,127 @@
+from enum import StrEnum
+
+
+class Gas(StrEnum):
+    CO2 = "CO2"
+
+
+class Unit(StrEnum):
+    PPM = "ppm"
+
+
+class ReadingSource(StrEnum):
+    SIMULATOR = "SIMULATOR"
+    REPLAY = "REPLAY"
+    DEVICE = "DEVICE"
+
+
+class ReadingQuality(StrEnum):
+    GOOD = "GOOD"
+    IMPUTED = "IMPUTED"
+    LATE = "LATE"
+    STUCK = "STUCK"
+    NOISY = "NOISY"
+    MISSING = "MISSING"
+    FAULT = "FAULT"
+
+
+class EvidenceSource(StrEnum):
+    CV_MODEL = "CV_MODEL"
+    SIMULATION_GROUND_TRUTH = "SIMULATION_GROUND_TRUTH"
+
+
+class DetectionClass(StrEnum):
+    PERSON = "person"
+    HELMET = "helmet"
+    VEST = "vest"
+    NO_HELMET = "no_helmet"
+
+
+class PpeState(StrEnum):
+    UNKNOWN = "UNKNOWN"
+    COMPLIANT = "COMPLIANT"
+    NON_COMPLIANT = "NON_COMPLIANT"
+
+
+class ZoneMembership(StrEnum):
+    UNKNOWN = "UNKNOWN"
+    INSIDE = "INSIDE"
+    OUTSIDE = "OUTSIDE"
+
+
+class ZoneType(StrEnum):
+    GAS_EXPOSURE = "GAS_EXPOSURE"
+    OVERHEAD_WORK = "OVERHEAD_WORK"
+
+
+class ModelStatus(StrEnum):
+    OK = "OK"
+    FALLBACK = "FALLBACK"
+    UNAVAILABLE = "UNAVAILABLE"
+
+
+class CrossingOutcome(StrEnum):
+    ALREADY_EXCEEDED = "ALREADY_EXCEEDED"
+    CROSSING_EXPECTED = "CROSSING_EXPECTED"
+    NO_CROSSING = "NO_CROSSING"
+    INSUFFICIENT_DATA = "INSUFFICIENT_DATA"
+    INVALID_PARAMETERS = "INVALID_PARAMETERS"
+
+
+class LeakLabel(StrEnum):
+    NO_LEAK_SIGNAL = "NO_LEAK_SIGNAL"
+    SUSPICIOUS_TREND = "SUSPICIOUS_TREND"
+    LIKELY_LEAK = "LIKELY_LEAK"
+
+
+class Severity(StrEnum):
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+    CRITICAL = "CRITICAL"
+
+
+class IncidentType(StrEnum):
+    CO2_VENTILATION_ADVISORY = "CO2_VENTILATION_ADVISORY"
+    CO2_ACTION_CROSSING_PREDICTED = "CO2_ACTION_CROSSING_PREDICTED"
+    PERSON_IN_PREDICTED_GAS_RISK = "PERSON_IN_PREDICTED_GAS_RISK"
+    CO2_SHORT_TERM_LIMIT = "CO2_SHORT_TERM_LIMIT"
+    CO2_IDLH_NOW_OR_IMMINENT = "CO2_IDLH_NOW_OR_IMMINENT"
+    PPE_HELMET_OVERHEAD_VIOLATION = "PPE_HELMET_OVERHEAD_VIOLATION"
+    PPE_VEST_VIOLATION = "PPE_VEST_VIOLATION"
+    SENSOR_UNRELIABLE = "SENSOR_UNRELIABLE"
+    CAMERA_DEGRADED = "CAMERA_DEGRADED"
+
+
+class IncidentState(StrEnum):
+    OPEN = "OPEN"
+    ACKNOWLEDGED = "ACKNOWLEDGED"
+    INVESTIGATING = "INVESTIGATING"
+    RESOLVED = "RESOLVED"
+
+
+class IncidentAction(StrEnum):
+    ACKNOWLEDGE = "ACKNOWLEDGE"
+    INVESTIGATE = "INVESTIGATE"
+    RESOLVE = "RESOLVE"
+    REOPEN = "REOPEN"
+    COMMENT = "COMMENT"
+
+
+class ComponentStatus(StrEnum):
+    HEALTHY = "HEALTHY"
+    DEGRADED = "DEGRADED"
+    UNAVAILABLE = "UNAVAILABLE"
+
+
+class SimState(StrEnum):
+    UNLOADED = "UNLOADED"
+    READY = "READY"
+    RUNNING = "RUNNING"
+    PAUSED = "PAUSED"
+    RESETTING = "RESETTING"
+
+
+class Actor(StrEnum):
+    SYSTEM = "SYSTEM"
+    HUMAN = "HUMAN"

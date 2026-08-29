@@ -1,0 +1,20 @@
+{
+  "status": "OK",
+  "clip": "demo-assets/replay_natural_motion.mp4",
+  "model_used": "ppe-yolo11n-1.1",
+  "person_only_fallback": false,
+  "n_frames_processed": 360,
+  "person_detections": 373,
+  "person_detection_rate": 1.0361111111111112,
+  "person_mean_confidence": 0.7020115480026675,
+  "unique_track_ids": 3,
+  "id_switch_candidate_events": 0,
+  "ppe_class_frame_counts": {
+    "helmet": 0,
+    "no_helmet": 0,
+    "vest": 0
+  },
+  "latency_ms_median": 11.531482999998843,
+  "note": "Qualitative stress test on a real continuous-motion clip, NOT a benchmark -- no ground-truth annotation exists for this clip. Compare person_detection_rate and PPE class counts against the official Construction-PPE test-split numbers in vision_model_metrics.json to judge the construction-to-factory / domain-shift gap qualitatively, not as a paired metric.",
+  "generated_at": "2026-08-28T15:41:05Z"
+}

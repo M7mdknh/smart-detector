@@ -1,0 +1,273 @@
+{
+  "generated_at": "2026-08-28T15:47:40Z",
+  "gru_status": "OK",
+  "global": {
+    "persistence": {
+      "mae": 145.17730454136114,
+      "rmse": 517.9038902717767,
+      "worst_case_abs_error": 5963.402920296694,
+      "p95_abs_error": 808.8046001641536,
+      "crossing_time_mae_minutes": 10.222222222222221,
+      "n": 1092
+    },
+    "physics": {
+      "mae": 57.19429038808617,
+      "rmse": 284.47885161079006,
+      "worst_case_abs_error": 5962.252730316043,
+      "p95_abs_error": 142.61963080737917,
+      "crossing_time_mae_minutes": 2.6296296296296298,
+      "n": 1092
+    },
+    "hybrid_physics_plus_gru": {
+      "mae": 47.593730690303325,
+      "rmse": 281.135886328054,
+      "worst_case_abs_error": 5960.539214795947,
+      "p95_abs_error": 77.95014619653523,
+      "crossing_time_mae_minutes": 2.6296296296296298,
+      "n": 1092
+    }
+  },
+  "by_category": {
+    "normal": {
+      "persistence": {
+        "mae": 21.909600737032285,
+        "rmse": 27.485962715304293,
+        "worst_case_abs_error": 100.10446614819995,
+        "p95_abs_error": 53.47824074570871,
+        "crossing_time_mae_minutes": null,
+        "n": 156
+      },
+      "physics": {
+        "mae": 19.900118552863912,
+        "rmse": 24.878488636066326,
+        "worst_case_abs_error": 88.08715362596979,
+        "p95_abs_error": 48.94280570771185,
+        "crossing_time_mae_minutes": null,
+        "n": 156
+      },
+      "hybrid_physics_plus_gru": {
+        "mae": 15.842941369330056,
+        "rmse": 19.570090666281047,
+        "worst_case_abs_error": 76.04513475218778,
+        "p95_abs_error": 36.97393337756613,
+        "crossing_time_mae_minutes": null,
+        "n": 156
+      }
+    },
+    "leak": {
+      "persistence": {
+        "mae": 306.3965103308048,
+        "rmse": 647.5734959283927,
+        "worst_case_abs_error": 4336.861027701048,
+        "p95_abs_error": 1561.355276583282,
+        "crossing_time_mae_minutes": 6.818181818181818,
+        "n": 156
+      },
+      "physics": {
+        "mae": 83.08714553564648,
+        "rmse": 295.0399044557547,
+        "worst_case_abs_error": 3980.5898254347276,
+        "p95_abs_error": 224.84726173809165,
+        "crossing_time_mae_minutes": 0.8522727272727273,
+        "n": 156
+      },
+      "hybrid_physics_plus_gru": {
+        "mae": 64.46249140395942,
+        "rmse": 289.4041872265424,
+        "worst_case_abs_error": 3967.1908548307847,
+        "p95_abs_error": 145.42657099504277,
+        "crossing_time_mae_minutes": 0.9090909090909091,
+        "n": 156
+      }
+    },
+    "rapid_leak": {
+      "persistence": {
+        "mae": 575.8439218681966,
+        "rmse": 1204.4362719339442,
+        "worst_case_abs_error": 5963.402920296694,
+        "p95_abs_error": 3102.0411791811175,
+        "crossing_time_mae_minutes": 16.595744680851062,
+        "n": 156
+      },
+      "physics": {
+        "mae": 201.087086576447,
+        "rmse": 688.2948842868028,
+        "worst_case_abs_error": 5962.252730316043,
+        "p95_abs_error": 572.0019921266796,
+        "crossing_time_mae_minutes": 5.957446808510638,
+        "n": 156
+      },
+      "hybrid_physics_plus_gru": {
+        "mae": 176.47895875790516,
+        "rmse": 682.4894700427125,
+        "worst_case_abs_error": 5960.539214795947,
+        "p95_abs_error": 570.5663603381751,
+        "crossing_time_mae_minutes": 5.851063829787234,
+        "n": 156
+      }
+    },
+    "ventilation_change": {
+      "persistence": {
+        "mae": 26.456854884239505,
+        "rmse": 33.90645397076453,
+        "worst_case_abs_error": 114.32833963492885,
+        "p95_abs_error": 70.40143946889333,
+        "crossing_time_mae_minutes": null,
+        "n": 156
+      },
+      "physics": {
+        "mae": 20.833236610490623,
+        "rmse": 26.376305198345136,
+        "worst_case_abs_error": 89.79477828645872,
+        "p95_abs_error": 52.62260536001066,
+        "crossing_time_mae_minutes": null,
+        "n": 156
+      },
+      "hybrid_physics_plus_gru": {
+        "mae": 17.334531789842636,
+        "rmse": 21.87883874894632,
+        "worst_case_abs_error": 97.86752468040481,
+        "p95_abs_error": 41.29923041543645,
+        "crossing_time_mae_minutes": null,
+        "n": 156
+      }
+    },
+    "changing_source": {
+      "persistence": {
+        "mae": 23.464563614769844,
+        "rmse": 29.478544501121704,
+        "worst_case_abs_error": 108.41877427882406,
+        "p95_abs_error": 59.44864213792502,
+        "crossing_time_mae_minutes": null,
+        "n": 156
+      },
+      "physics": {
+        "mae": 20.1577678649831,
+        "rmse": 25.192506808265954,
+        "worst_case_abs_error": 92.55357943943818,
+        "p95_abs_error": 49.51484796108636,
+        "crossing_time_mae_minutes": null,
+        "n": 156
+      },
+      "hybrid_physics_plus_gru": {
+        "mae": 15.659389234485866,
+        "rmse": 19.65338791167317,
+        "worst_case_abs_error": 58.06284954798866,
+        "p95_abs_error": 38.08738439728747,
+        "crossing_time_mae_minutes": null,
+        "n": 156
+      }
+    },
+    "sensor_noise": {
+      "persistence": {
+        "mae": 40.069655364978246,
+        "rmse": 63.25915864995471,
+        "worst_case_abs_error": 398.9920843512789,
+        "p95_abs_error": 145.71305771924386,
+        "crossing_time_mae_minutes": null,
+        "n": 156
+      },
+      "physics": {
+        "mae": 35.544183425460794,
+        "rmse": 55.890498721211145,
+        "worst_case_abs_error": 343.19698238234014,
+        "p95_abs_error": 130.88284171993774,
+        "crossing_time_mae_minutes": null,
+        "n": 156
+      },
+      "hybrid_physics_plus_gru": {
+        "mae": 27.78950915901496,
+        "rmse": 45.4373046810666,
+        "worst_case_abs_error": 254.76525020460576,
+        "p95_abs_error": 106.84497839248388,
+        "crossing_time_mae_minutes": null,
+        "n": 156
+      }
+    },
+    "missing_data": {
+      "persistence": {
+        "mae": 22.100024989506586,
+        "rmse": 27.876147961339814,
+        "worst_case_abs_error": 101.68766019479398,
+        "p95_abs_error": 55.52455308178711,
+        "crossing_time_mae_minutes": null,
+        "n": 156
+      },
+      "physics": {
+        "mae": 19.750494150711273,
+        "rmse": 25.02133530792881,
+        "worst_case_abs_error": 86.90352849807306,
+        "p95_abs_error": 49.22660971667094,
+        "crossing_time_mae_minutes": null,
+        "n": 156
+      },
+      "hybrid_physics_plus_gru": {
+        "mae": 15.588293117585145,
+        "rmse": 20.064132675246956,
+        "worst_case_abs_error": 64.57626952057103,
+        "p95_abs_error": 40.16291273968499,
+        "crossing_time_mae_minutes": null,
+        "n": 156
+      }
+    }
+  },
+  "observable_precursor_condition": {
+    "n": 30,
+    "physics": {
+      "mae": 50.77466454470483,
+      "rmse": 81.41291581128708,
+      "worst_case_abs_error": 343.19698238234014,
+      "p95_abs_error": 192.78474739793396,
+      "crossing_time_mae_minutes": null,
+      "n": 30
+    },
+    "hybrid_physics_plus_gru": {
+      "mae": 37.00897507021065,
+      "rmse": 59.36589126234868,
+      "worst_case_abs_error": 254.76525020460576,
+      "p95_abs_error": 137.02923939948167,
+      "crossing_time_mae_minutes": null,
+      "n": 30
+    }
+  },
+  "unannounced_onset_condition": {
+    "n": 1062,
+    "physics": {
+      "mae": 57.37563575089355,
+      "rmse": 288.14421983599243,
+      "worst_case_abs_error": 5962.252730316043,
+      "p95_abs_error": 138.3353902884389,
+      "crossing_time_mae_minutes": 2.6296296296296298,
+      "n": 1062
+    },
+    "hybrid_physics_plus_gru": {
+      "mae": 47.89273508635114,
+      "rmse": 284.9044126807548,
+      "worst_case_abs_error": 5960.539214795947,
+      "p95_abs_error": 71.65476375324343,
+      "crossing_time_mae_minutes": 2.6296296296296298,
+      "n": 1062
+    },
+    "note": "No observable precursor in the input window by construction. Neither physics nor the GRU can be expected to anticipate this -- reported as a structural information limit."
+  },
+  "inference_latency_ms": {
+    "median": 1.9008700019185198,
+    "p95": 2.406025750497065
+  },
+  "promotion_decision": {
+    "promote_hybrid_as_default": true,
+    "criteria": {
+      "improves_mae_by_5pct_or_more": true,
+      "no_worst_case_regression_over_10pct": true,
+      "crossing_time_not_worse_by_10pct": true,
+      "fast_enough_for_5min_cadence": true
+    },
+    "measured": {
+      "physics_mae": 57.19429038808617,
+      "hybrid_mae": 47.593730690303325,
+      "physics_worst": 5962.252730316043,
+      "hybrid_worst": 5960.539214795947
+    },
+    "explanation": "Hybrid promoted as the default combined forecast."
+  }
+}

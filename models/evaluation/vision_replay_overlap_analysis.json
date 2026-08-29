@@ -1,0 +1,33 @@
+{
+  "purpose": "Audit whether the 12 images used to build the bundled camera replay clip (demo-assets/replay.mp4) overlap with the Construction-PPE published test split used for reported detection metrics, and whether reported metrics are still honest if so.",
+  "finding": "OVERLAP_CONFIRMED_NO_MATERIAL_METRIC_IMPACT",
+  "detail": "All 12 source stills listed in demo-assets/REPLAY_SOURCE.md (image1.jpeg, image10.jpeg, image1003.jpg, image1007.jpg, image1009.jpg, image1014.jpg, image1019.jpg, image1023.jpg, image1037.jpeg, image1120.jpg, image1132.jpg, image1133.jpg) were confirmed present, byte-for-byte, in <local-dataset-root>/construction-ppe/images/test/ (the published test split, 141 images total) -- the exact split scored by backend/scripts/evaluate_vision_model.py and reported in models/evaluation/vision_model_metrics.json, models/evaluation/vision_model_metrics_v1.0.json, and models/evaluation/full_evaluation_report.json. Verified by directory listing and sha256 checksum, not filename alone.",
+  "what_touched_what": {
+    "train_split_1132_images": "Used only for YOLO11n fine-tuning (models/training run ppe-yolo11n, see models/evaluation/vision_training_runs/ppe-yolo11n/args.yaml). No overlap with the 12 replay images -- they were drawn from images/test/, not images/train/.",
+    "val_split_143_images": "Used only for threshold tuning (models/evaluation/ppe_threshold_sweep*.json). No overlap with the 12 replay images.",
+    "test_split_141_images_incl_the_12": "Scored once, after training and threshold tuning were finalized, to produce the reported per-class precision/recall/AP50/AP50-95 and mAP50/mAP50-95 in vision_model_metrics*.json. The same 12 of these 141 images were separately read (label files only, not model predictions) to select stills for the bundled demo replay clip, per demo-assets/REPLAY_SOURCE.md's stated selection method.",
+    "replay_mp4": "Built from 12 test-split stills via a synthetic Ken-Burns pan; used only for the qualitative replay/ByteTrack demo path (vision_model_metrics.json's separate 'replay_evaluation' section: latency, FPS, track-ID counts, PPE frame counts). No ground-truth-labelled precision/recall is computed against the replay video anywhere in the codebase -- replay_evaluation reports operational counts only, not accuracy metrics, so the overlap does not inflate any reported accuracy number through that path."
+  },
+  "is_this_train_test_leakage": "No. The 12 images were never used for training or threshold tuning -- only for (a) final test-set scoring and (b) selection into a demo asset via reading label files. This is a documentation-honesty issue (the word 'untouched' overstated what was true), not a metric-validity issue, because no model-selection, hyperparameter, or threshold decision used those 12 images differently from the rest of the test set.",
+  "corrected_metrics_excluding_the_12_replay_images": {
+    "method": "Re-ran `model.val()` (ultralytics 8.4.131, same models/artifacts/ppe-yolo11n.pt v1.1 weights, same construction-ppe.yaml classes) against a filtered test list containing the remaining 129/141 test images (test minus the 12 replay-source images).",
+    "n_images": 129,
+    "map50": 0.5552961877011179,
+    "map50_95": 0.27640714878888434,
+    "per_class": {
+      "helmet": {"precision": 0.9182313614091413, "recall": 0.8944444444444445, "ap50": 0.9266801141008066, "ap50_95": 0.5164678335367193},
+      "vest": {"precision": 0.8286720277663244, "recall": 0.8695652173913043, "ap50": 0.8831942437216103, "ap50_95": 0.5670754530477446},
+      "person": {"precision": 0.7675937130909312, "recall": 0.8055555555555556, "ap50": 0.8279505385830795, "ap50_95": 0.5026947314551966},
+      "no_helmet": {"precision": 0.3909576478377998, "recall": 0.16216216216216217, "ap50": 0.21082179638351933, "ap50_95": 0.08182804112801398}
+    },
+    "comparison_to_full_141_image_report_vision_model_metrics_json": {
+      "map50_full_141": 0.5590026465661242,
+      "map50_non_replay_129": 0.5552961877011179,
+      "no_helmet_recall_full_141": 0.175,
+      "no_helmet_recall_non_replay_129": 0.16216216216216217,
+      "conclusion": "Differences are within run-to-run noise (<=0.5 pp mAP50, <=1.3 pp no_helmet recall). Removing the 12 replay-source images does not materially change any reported metric, so the originally reported 141-image numbers remain representative and are kept as the primary reported figures; this file exists so the overlap is documented rather than silently present."
+    }
+  },
+  "conclusion": "The claim 'untouched test split' in vision_model_metrics.json/vision_model_metrics_v1.0.json/full_evaluation_report.json/demo-assets/NATURAL_MOTION_SOURCE.md was accurate about training/validation isolation but did not disclose that 12 of the 141 test images were also repurposed as the source of the bundled replay demo. That wording has been corrected in those files to state the overlap explicitly and point here. No metric values were changed because the non-replay-subset re-evaluation (above) shows the overlap has no material effect.",
+  "reproduction": "Excluded-image list generated by diffing demo-assets/REPLAY_SOURCE.md's 'Source images used' filenames against <local-dataset-root>/construction-ppe/images/test/; re-scored with `YOLO('models/artifacts/ppe-yolo11n.pt').val(data=<yaml with test: <129-image list.txt>>, split='test')` using ultralytics 8.4.131 on the same GPU (NVIDIA GeForce MX450) declared elsewhere in this evaluation directory."
+}

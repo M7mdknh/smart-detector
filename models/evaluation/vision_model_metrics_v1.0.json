@@ -1,0 +1,64 @@
+{
+  "declared_hardware": "GPU: NVIDIA GeForce MX450",
+  "detection_metrics": {
+    "status": "OK",
+    "map50": 0.5037154849958999,
+    "map50_95": 0.2596162032767307,
+    "per_class": {
+      "helmet": {
+        "precision": 0.9284540834493765,
+        "recall": 0.8958333333333334,
+        "ap50": 0.9204678143908595,
+        "ap50_95": 0.5039617200425397
+      },
+      "vest": {
+        "precision": 0.8333676215423368,
+        "recall": 0.8429058258144818,
+        "ap50": 0.8829275703845414,
+        "ap50_95": 0.5509841261042409
+      },
+      "person": {
+        "precision": 0.7923891402983821,
+        "recall": 0.8008474576271186,
+        "ap50": 0.8189860565052562,
+        "ap50_95": 0.49780390599222457
+      },
+      "no_helmet": {
+        "precision": 0.2570375700952262,
+        "recall": 0.125,
+        "ap50": 0.11412234566341753,
+        "ap50_95": 0.051263263590534014
+      }
+    },
+    "person_recall": 0.8008474576271186,
+    "helmet_recall": 0.8958333333333334,
+    "note": "Measured on the full published Construction-PPE test split (141 images), never used for training or threshold tuning. 12 of these 141 images are also the source stills for the bundled demo replay clip (demo-assets/REPLAY_SOURCE.md); see models/evaluation/vision_replay_overlap_analysis.json for the disclosed overlap and confirmation that scoring the remaining 129 non-replay images changes no metric materially."
+  },
+  "replay_evaluation": {
+    "status": "OK",
+    "n_frames": 480,
+    "unique_track_ids": 9,
+    "track_id_frame_counts": {
+      "1": 112,
+      "6": 79,
+      "17": 39,
+      "19": 39,
+      "20": 39,
+      "23": 199,
+      "45": 39,
+      "46": 39,
+      "47": 39
+    },
+    "id_switch_candidate_events": 0,
+    "ppe_class_frame_counts": {
+      "helmet": 382,
+      "no_helmet": 40,
+      "vest": 551
+    },
+    "latency_ms_median": 11.021783499018056,
+    "latency_ms_p95": 12.181349997263169,
+    "achieved_fps": 89.1608521420284,
+    "note": "Measured by actually running the fine-tuned model against the bundled replay clip frame-by-frame on this machine's hardware, not a vendor benchmark."
+  },
+  "domain_gap_note": "Detection metrics are measured on the Construction-PPE test split (construction-site imagery), not a factory floor. Person/PPE recall figures here do not establish factory-deployment accuracy -- see docs/README.md's domain-gap limitations section."
+}

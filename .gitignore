@@ -1,0 +1,73 @@
+# Uploaded reference material and generated inspection files
+upload/
+tmp/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+
+# JavaScript
+node_modules/
+dist/
+coverage/
+.coverage
+.coverage.*
+htmlcov/
+playwright-report/
+test-results/
+.cache/
+
+# Local runtime state and secrets
+*.db
+*.sqlite*
+*.db-journal
+*.pid
+*.pid.lock
+.env
+.env.*
+!.env.example
+logs/
+output/
+*.log
+
+# Downloaded/extracted training datasets and browser automation profiles --
+# reproducibly fetched by make train-vision / e2e, never committed.
+models/training/data/
+models/training/datasets/
+datasets/
+*.zip
+frontend/.playwright/
+frontend/tests/.auth/
+
+# Generated model artifacts are added deliberately when required.
+# All bundled artifacts are small and reproducible, and needed for `make demo`
+# to run in non-fallback mode (leak classifier, PPE detector, GRU residual
+# forecast + its preprocessor) -- see docs/README.md §6/§7. The superseded
+# ppe-yolo11n-v1.0.pt is also kept tracked: models/registry.json's
+# "previous_version" entry and docs/FINAL_METRICS.md's v1.0->v1.1 comparison
+# reference it by checksum, so silently dropping it from the submission would
+# make that documented comparison unreproducible.
+models/artifacts/*
+!models/artifacts/.gitkeep
+!models/artifacts/leak-classifier-xgb.json
+!models/artifacts/ppe-yolo11n.pt
+!models/artifacts/ppe-yolo11n-v1.0.pt
+!models/artifacts/ppe-yolo11n-v1.1.pt
+!models/artifacts/forecast-gru.pt
+!models/artifacts/forecast-gru-scaler.json
+!models/artifacts/forecast-gru-feature-schema.json
+
+# Ultralytics' own per-epoch training run directory (weight snapshots, plots) --
+# large and fully reproducible via `make train-vision`; only the aggregated JSON
+# reports under models/evaluation/ are kept.
+models/evaluation/vision_training_runs/
+
+# OS and editor files
+.DS_Store
+.idea/
+.vscode/
+.project-git/

@@ -1,0 +1,15 @@
+{
+  "no_scenario_in_multiple_splits": true,
+  "no_overlapping_window_crosses_splits": true,
+  "feature_timestamps_never_exceed_cutoff": true,
+  "no_forbidden_features": true,
+  "feature_schema": [
+    "observed_co2_norm",
+    "physics_one_step_norm",
+    "residual_norm",
+    "ventilation_norm",
+    "source_norm",
+    "missing_mask",
+    "quality_flag"
+  ]
+}

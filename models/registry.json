@@ -1,0 +1,180 @@
+{
+  "leak_classifier": {
+    "name": "leak_classifier",
+    "version": "1.0",
+    "artifact_path": "models/artifacts/leak-classifier-xgb.json",
+    "sha256": "0abcb0aa8992012b3e245f85c2ad4ec179bc0009b3d7f43faf267f7c544c39f9",
+    "feature_schema": [
+      "current_ppm",
+      "delta_5m",
+      "delta_15m",
+      "delta_30m",
+      "slope_15m",
+      "slope_30m",
+      "slope_60m",
+      "rollmean_15m",
+      "rollstd_15m",
+      "rollmean_30m",
+      "rollstd_30m",
+      "rollmean_60m",
+      "rollstd_60m",
+      "deviation_from_no_leak_physics",
+      "ventilation_m3h",
+      "ventilation_delta_30m",
+      "missing_fraction_60m"
+    ],
+    "training_data_version": "1.0",
+    "config_version": "1.0",
+    "calibration_version": "1.0",
+    "calibration_status": "CALIBRATED",
+    "calibration_sigmoid_a": -8.96057582813737,
+    "calibration_sigmoid_b": 4.404744839605329,
+    "metrics_path": "models/evaluation/leak_model_metrics.json",
+    "split_manifest_path": "models/evaluation/leak_model_split_manifest.json",
+    "label_version": "1.0",
+    "created_at": "2026-08-29T10:34:56Z",
+    "note": "Calibrated wrapper's probability mapping is not directly serializable in the raw booster file; runtime uses the underlying booster's raw probability. See metrics for calibration quality (Brier score)."
+  },
+  "ppe_detector": {
+    "name": "ppe_detector",
+    "version": "1.1",
+    "artifact_path": "models/artifacts/ppe-yolo11n.pt",
+    "sha256": "a6b5aedc326b2ad9118d3f5ce1f97769c746b9df92b073df0c6d62b7bacb38ae",
+    "artifact_size_bytes": 5464083,
+    "previous_version": {
+      "version": "1.0",
+      "artifact_path": "models/artifacts/ppe-yolo11n-v1.0.pt",
+      "sha256": "094f67b194251003c8c2b1a97708345ede61cc4600073116c61a822d2cfb9edf",
+      "artifact_size_bytes": 21274454,
+      "metrics_path": "models/evaluation/vision_model_metrics_v1.0.json",
+      "thresholds_path": "models/evaluation/ppe_thresholds_v1.0_tuned_on_epoch30.json",
+      "reason_superseded": "Validation-split threshold sweep (models/evaluation/ppe_threshold_sweep.json) showed no_helmet recall plateaued at 0.237 across every tested confidence threshold (0.05-0.40), a model-capacity ceiling rather than a threshold-tuning problem. This justified resuming the ORIGINAL interrupted 60-epoch training run (scripts/resume_vision_training.py, resume=True from the same optimizer/scheduler state, train/val split only, seed unchanged) rather than starting a new experiment. Retained here, never deleted -- see docs/README.md for the full before/after comparison."
+    },
+    "base_checkpoint": "yolo11n.pt (COCO-pretrained)",
+    "dataset_url": "https://docs.ultralytics.com/datasets/detect/construction-ppe",
+    "dataset_download_url": "https://github.com/ultralytics/assets/releases/download/v0.0.0/construction-ppe.zip",
+    "dataset_license": "AGPL-3.0 (Ultralytics YOLO11 code/weights and Construction-PPE dataset)",
+    "dataset_classes": [
+      "helmet",
+      "gloves",
+      "vest",
+      "boots",
+      "goggles",
+      "none",
+      "Person",
+      "no_helmet",
+      "no_goggle",
+      "no_gloves",
+      "no_boots"
+    ],
+    "dataset_zip_sha256_locally_computed": null,
+    "dataset_split_verified": {
+      "train": 1132,
+      "val": 143,
+      "test": 141
+    },
+    "class_map_dataset_to_runtime": {
+      "Person": "person",
+      "helmet": "helmet",
+      "vest": "vest",
+      "no_helmet": "no_helmet"
+    },
+    "runtime_classes": [
+      "person",
+      "helmet",
+      "vest",
+      "no_helmet"
+    ],
+    "runtime_confidence_thresholds": {
+      "person": 0.4,
+      "helmet": 0.35,
+      "vest": 0.4,
+      "no_helmet": 0.05
+    },
+    "runtime_confidence_thresholds_source": "backend/app/inference/ppe_thresholds.json (validation-split PR sweep, scripts/tune_ppe_thresholds.py, re-run against the v1.1 checkpoint)",
+    "runtime_nms_iou": 0.5,
+    "input_size": 640,
+    "training_config": {
+      "epochs_requested": 60,
+      "epochs_completed": 60,
+      "resumed_from": "v1.0 checkpoint (epoch 36/60 interrupted state), scripts/resume_vision_training.py, resume=True, same optimizer/scheduler/seed",
+      "patience": 12,
+      "batch": 8,
+      "seed": 42,
+      "amp": false
+    },
+    "ultralytics_version": "8.4.131",
+    "torch_version": "2.5.1+cu121",
+    "training_hardware": "NVIDIA GeForce MX450",
+    "training_device": "0",
+    "created_at": "2026-08-28T18:37:00Z",
+    "test_set_comparison_v1.0_to_v1.1": {
+      "map50": [
+        0.5037154849958999,
+        0.5590026465661242
+      ],
+      "map50_95": [
+        0.2596162032767307,
+        0.2755361449491202
+      ],
+      "no_helmet_precision": [
+        0.2570375700952262,
+        0.3777103096178605
+      ],
+      "no_helmet_recall": [
+        0.125,
+        0.175
+      ],
+      "helmet_recall": [
+        0.8958333333333334,
+        0.9010416666666666
+      ],
+      "vest_recall": [
+        0.8429058258144818,
+        0.8707865168539326
+      ],
+      "person_recall": [
+        0.8008474576271186,
+        0.809322033898305
+      ],
+      "person_precision": [
+        0.7923891402983821,
+        0.7832745704086017
+      ]
+    },
+    "note": "v1.0 training was externally interrupted at epoch 36/60. A validation-split threshold sweep on v1.0 (models/evaluation/ppe_threshold_sweep_v1.0.json) showed no_helmet recall plateaued at 0.237 across every tested confidence threshold, indicating a model-capacity limit rather than a threshold problem -- this was the validation evidence used to justify a targeted continuation-training experiment rather than a from-scratch retrain. v1.1 resumed the SAME interrupted run to its original 60-epoch target from the saved optimizer/scheduler state (train/val split only, same seed=42, no test-split access during training or tuning). Every held-out test-set metric improved or held steady (see test_set_comparison_v1.0_to_v1.1 above); person precision moved by -0.009, within run-to-run noise. Promoted to default per the task's promotion criteria. Trained on the full 11-class published label set unmodified; the runtime adapter filters to person/helmet/vest/no_helmet only. v1.0 artifact, metrics, and thresholds are preserved (see previous_version above), never deleted."
+  },
+  "forecast_gru": {
+    "name": "forecast_gru",
+    "version": "1.0",
+    "artifact_path": "models/artifacts/forecast-gru.pt",
+    "sha256": "4c1c5c04c541f5faa459668d1ea4567c5d3189a7eb277189e851a0a9fc8f1e02",
+    "scaler_path": "models/artifacts/forecast-gru-scaler.json",
+    "scaler_sha256": "a8cb29d011879a4dd287bca91f1854b75166bce41dcbe2d2d07daccf0fb6ded3",
+    "feature_schema_path": "models/artifacts/forecast-gru-feature-schema.json",
+    "split_manifest_path": "models/evaluation/gru_split_manifest.json",
+    "leakage_proof_path": "models/evaluation/gru_leakage_proof.json",
+    "training_config_path": "models/evaluation/gru_training_config.json",
+    "training_config": {
+      "seed": 42,
+      "batch_size": 64,
+      "max_epochs": 100,
+      "patience": 10,
+      "lr": 0.001,
+      "weight_decay": 0.0001,
+      "grad_clip_norm": 1.0,
+      "loss": "HuberLoss",
+      "optimizer": "AdamW",
+      "hidden_size": 32,
+      "gru_layers": 1,
+      "epochs_completed": 100,
+      "best_val_loss": 46.68752850426568,
+      "device": "cpu",
+      "training_seconds": 212.17267870903015
+    },
+    "input_steps": 120,
+    "output_steps": 12,
+    "created_at": "2026-08-28T15:47:29Z",
+    "note": "Predicts the residual against a cutoff-anchored physics forecast (combined = physics + residual), never an unconstrained absolute concentration."
+  }
+}

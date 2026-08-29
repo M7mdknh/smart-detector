@@ -1,0 +1,13 @@
+# Checked-in ByteTrack config, version 1.0.
+# Values per vision-worker-safety/references/model-specification.md's frozen
+# ByteTrack defaults (P0 starting values, not vendor defaults -- ultralytics'
+# bundled bytetrack.yaml uses track_high_thresh=0.25/new_track_thresh=0.25,
+# looser than this spec).
+
+tracker_type: bytetrack
+track_high_thresh: 0.45
+track_low_thresh: 0.10
+new_track_thresh: 0.50
+track_buffer: 30
+match_thresh: 0.80
+fuse_score: true

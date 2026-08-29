@@ -1,0 +1,143 @@
+{
+  "generated_at": "2026-08-29T10:34:36Z",
+  "sections": {
+    "physics": {
+      "n_scenarios": 10,
+      "n_point_comparisons": 120,
+      "physics_mae_ppm": 95.49982989386424,
+      "physics_rmse_ppm": 121.93283368295727,
+      "n_crossing_comparisons": 6,
+      "crossing_time_mae_minutes": 20.339847774324245,
+      "note": "Physics forecast is deterministic given (V, Cin, Q, G); this reports forecast error against the sensor-noise-perturbed generated trajectory under piecewise-constant controls, not against real-world data (no real deployment data exists for this synthetic prototype).",
+      "generated_at": "2026-08-29T10:34:37Z",
+      "exit_code": 0
+    },
+    "leak_classifier": {
+      "persistence": {
+        "pr_auc": 0.22,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "brier": 0.1716102567388611,
+        "n": 900,
+        "n_positive": 198
+      },
+      "physics_only": {
+        "pr_auc": 0.9228472858144934,
+        "precision": 0.8877551020408163,
+        "recall": 0.8787878787878788,
+        "f1": 0.883248730964467,
+        "brier": 0.09235478606554468,
+        "n": 900,
+        "n_positive": 198
+      },
+      "logistic_regression": {
+        "pr_auc": 0.9412474117529842,
+        "precision": 1.0,
+        "recall": 0.898989898989899,
+        "f1": 0.9468085106382979,
+        "brier": 0.028627451660892887,
+        "n": 900,
+        "n_positive": 198
+      },
+      "xgboost_uncalibrated": {
+        "pr_auc": 0.9650636588016652,
+        "precision": 0.9888888888888889,
+        "recall": 0.898989898989899,
+        "f1": 0.9417989417989417,
+        "brier": 0.024620780893007024,
+        "n": 900,
+        "n_positive": 198
+      },
+      "xgboost_calibrated": {
+        "pr_auc": 0.9650636588016652,
+        "precision": 0.9888888888888889,
+        "recall": 0.898989898989899,
+        "f1": 0.9417989417989417,
+        "brier": 0.021966131994512157,
+        "n": 900,
+        "n_positive": 198
+      },
+      "calibration_status": "CALIBRATED",
+      "exit_code": 0
+    },
+    "vision": {
+      "declared_hardware": "GPU: NVIDIA GeForce MX450",
+      "detection_metrics": {
+        "status": "OK",
+        "map50": 0.5590026465661242,
+        "map50_95": 0.2755361449491202,
+        "per_class": {
+          "helmet": {
+            "precision": 0.9230292517377621,
+            "recall": 0.9010416666666666,
+            "ap50": 0.9319977099277573,
+            "ap50_95": 0.5227948506419755
+          },
+          "vest": {
+            "precision": 0.8378846466231077,
+            "recall": 0.8707865168539326,
+            "ap50": 0.8846922118367033,
+            "ap50_95": 0.5575070474882401
+          },
+          "person": {
+            "precision": 0.7832745704086017,
+            "recall": 0.809322033898305,
+            "ap50": 0.8332073190931832,
+            "ap50_95": 0.5106936890282978
+          },
+          "no_helmet": {
+            "precision": 0.3777103096178605,
+            "recall": 0.175,
+            "ap50": 0.2284980584847681,
+            "ap50_95": 0.08342220470717693
+          }
+        },
+        "person_recall": 0.809322033898305,
+        "helmet_recall": 0.9010416666666666,
+        "note": "Measured on the full published Construction-PPE test split (141 images), never used for training or threshold tuning. 12 of these 141 images are also the source stills for the bundled demo replay clip (demo-assets/REPLAY_SOURCE.md); see models/evaluation/vision_replay_overlap_analysis.json for the disclosed overlap and confirmation that scoring the remaining 129 non-replay images changes no metric materially."
+      },
+      "replay_evaluation": {
+        "status": "OK",
+        "n_frames": 480,
+        "unique_track_ids": 11,
+        "track_id_frame_counts": {
+          "1": 83,
+          "7": 37,
+          "9": 39,
+          "14": 79,
+          "27": 39,
+          "28": 39,
+          "29": 39,
+          "34": 199,
+          "54": 39,
+          "58": 39,
+          "59": 39
+        },
+        "id_switch_candidate_events": 1,
+        "ppe_class_frame_counts": {
+          "helmet": 423,
+          "no_helmet": 94,
+          "vest": 588
+        },
+        "latency_ms_median": 11.08882899643504,
+        "latency_ms_p95": 12.562852003611624,
+        "achieved_fps": 87.83141069213521,
+        "note": "Measured by actually running the fine-tuned model against the bundled replay clip frame-by-frame on this machine's hardware, not a vendor benchmark."
+      },
+      "domain_gap_note": "Detection metrics are measured on the Construction-PPE test split (construction-site imagery), not a factory floor. Person/PPE recall figures here do not establish factory-deployment accuracy -- see docs/README.md's domain-gap limitations section.",
+      "exit_code": 0
+    },
+    "system": {
+      "exit_code": 0,
+      "summary_line": "19 passed in 4.33s",
+      "covers": [
+        "incident dedup (repeated evidence updates one incident, not duplicates)",
+        "incident workflow state machine + optimistic concurrency",
+        "reading idempotency (duplicate reading_id)",
+        "normal/gradual_leak/ventilation_failure/overhead_ppe scenario end-to-end behavior"
+      ],
+      "note": "Automated coverage, not a substitute for the live manual verification recorded in docs/README.md's acceptance matrix."
+    }
+  }
+}

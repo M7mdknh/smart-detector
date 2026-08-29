@@ -1,0 +1,35 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - backend-data:/app/data
+      - ./models:/app/../models
+      - ./demo-assets:/app/../demo-assets
+    environment:
+      - SENTINEL_BIND_HOST=0.0.0.0
+      # Both localhost and 127.0.0.1 variants are listed for every port a browser might
+      # actually use to reach this stack -- found live that "localhost:8080" alone still
+      # blocked the frontend when a reviewer opened it via "127.0.0.1:8080" instead (same
+      # origin to a human, a different origin to CORS).
+      - SENTINEL_CORS_ORIGINS=["http://localhost:5173","http://127.0.0.1:5173","http://localhost:8080","http://127.0.0.1:8080"]
+    command: >
+      sh -c "python -m alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000"
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "8080:80"
+    # No VITE_* environment here: this is a static nginx-served build, and Vite bakes
+    # VITE_* values in at `docker build` time, not container runtime -- setting them here
+    # would silently have no effect. The built-in default API base (127.0.0.1:8000)
+    # already matches this compose file's backend port mapping.
+    depends_on:
+      - backend
+
+volumes:
+  backend-data:
