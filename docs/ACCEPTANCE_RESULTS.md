@@ -29,7 +29,7 @@ the actual (now-fixed) application code, and `docs/FINAL_VERIFICATION.md` (cited
 relied upon; its "CURRENT clean-environment run" section is the current evidence, its
 "PREVIOUS ... SUPERSEDED" section is historical only).
 
-**A01–A16: 15 PASS, 1 PASS WITH LIMITATION, 0 FAIL**
+**A01–A18: 17 PASS, 1 PASS WITH LIMITATION, 0 FAIL**
 **E01–E12: 10 PASS, 2 PASS WITH LIMITATION, 0 FAIL**
 
 (E01–E12 follow the numbering already established in `docs/README.md` §8, covering the

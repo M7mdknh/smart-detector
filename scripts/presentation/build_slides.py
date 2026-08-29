@@ -4,6 +4,8 @@ docs, and committed screenshots/evidence frames) -- no invented figures.
 """
 
 import json
+import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -14,6 +16,37 @@ REPO = Path("/home/muhammad/Documents/smart-detector")
 SHOTS = REPO / "docs" / "screenshots" / "final"
 OUT_DIR = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("/tmp/slides_html")
 OUT_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def _run_test_counts() -> tuple[int, int]:
+    """Actually re-runs the backend and frontend test suites right now (not a
+    cached/remembered number) so slide 16's "verified this session" claim is
+    true by construction -- these two counts were previously hardcoded
+    literals that silently went stale (173/18) after this session added new
+    tests. Fails loudly (not a fallback guess) if either suite doesn't pass
+    cleanly or its output can't be parsed, matching this script's existing
+    assert-driven style for every other metric."""
+    backend = subprocess.run(
+        [str(REPO / "backend/.venv/bin/python"), "-m", "pytest", "-q"],
+        cwd=REPO / "backend", capture_output=True, text=True, timeout=300,
+    )
+    assert backend.returncode == 0, f"backend test suite failed:\n{backend.stdout}\n{backend.stderr}"
+    backend_match = re.search(r"(\d+) passed", backend.stdout)
+    assert backend_match, f"could not parse backend test count from:\n{backend.stdout}"
+
+    frontend = subprocess.run(
+        ["npm", "test", "--", "--run"],
+        cwd=REPO / "frontend", capture_output=True, text=True, timeout=300,
+    )
+    assert frontend.returncode == 0, f"frontend test suite failed:\n{frontend.stdout}\n{frontend.stderr}"
+    frontend_match = re.search(r"Tests\s+(\d+) passed", frontend.stdout)
+    assert frontend_match, f"could not parse frontend test count from:\n{frontend.stdout}"
+
+    return int(backend_match.group(1)), int(frontend_match.group(1))
+
+
+BACKEND_TEST_COUNT, FRONTEND_TEST_COUNT = _run_test_counts()
+print(f"Verified: backend tests={BACKEND_TEST_COUNT} frontend tests={FRONTEND_TEST_COUNT} (re-run live, not hardcoded)")
 
 # ---------------------------------------------------------------------------
 # Load + verify real metrics from authoritative files
@@ -635,8 +668,8 @@ html = f"""<div class="slide">
   {header("Testing & Acceptance", 16)}
   <h2>Verified this session, not stale figures</h2>
   <div class="grid4" style="margin-top:28px;">
-    <div class="card"><div class="metric"><div class="value green">173</div><div class="label">Backend tests passing</div></div></div>
-    <div class="card"><div class="metric"><div class="value green">18</div><div class="label">Frontend tests passing</div></div></div>
+    <div class="card"><div class="metric"><div class="value green">{BACKEND_TEST_COUNT}</div><div class="label">Backend tests passing</div></div></div>
+    <div class="card"><div class="metric"><div class="value green">{FRONTEND_TEST_COUNT}</div><div class="label">Frontend tests passing</div></div></div>
     <div class="card"><div class="metric"><div class="value green">2/2</div><div class="label">Playwright e2e suites</div></div></div>
     <div class="card"><div class="metric"><div class="value green">0</div><div class="label">Known regressions</div></div></div>
   </div>
@@ -651,7 +684,7 @@ html = f"""<div class="slide">
   {footer("Backend/frontend counts re-run and confirmed at presentation-build time")}
 </div>"""
 add("16_testing", html,
-    say="173 backend tests and 18 frontend tests pass right now — re-run at the time this deck was built, not copied from an old report — plus both Playwright e2e suites and a documented acceptance matrix with zero failures.",
+    say=f"{BACKEND_TEST_COUNT} backend tests and {FRONTEND_TEST_COUNT} frontend tests pass right now — re-run at the time this deck was built, not copied from an old report — plus both Playwright e2e suites and a documented acceptance matrix with zero failures.",
     evidence="Test counts were re-executed via pytest and vitest immediately before building this slide; the acceptance matrix is docs/ACCEPTANCE_RESULTS.md, dated and cross-referenced.",
     transition="No system is without limitations — here they are, stated directly.",
     question="What exactly are the 'PASS WITH LIMITATION' items?",

@@ -32,6 +32,12 @@ body {
 .slide.light ul.clean li { color: #0a1420; }
 .slide.light p { color: #334155; }
 .slide.light .card { background: #f8fafc; border: 1px solid #e2e8f0; }
+/* .brand defaults to --white text for the dark slide background; on a light
+   slide that is white-on-white (invisible) -- found live via visual
+   inspection of every rendered slide, not caught by the metric assertions
+   (17_limitations' header text was blank). */
+.slide.light .brand { color: #0a1420; }
+.slide.light .pagenum { color: #64748b; }
 
 .eyebrow { color: var(--orange); font-size: 22px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 14px; }
 h1 { font-size: 58px; font-weight: 800; line-height: 1.12; letter-spacing: -0.5px; }
