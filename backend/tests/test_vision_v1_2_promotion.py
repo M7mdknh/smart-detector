@@ -45,6 +45,7 @@ def test_load_model_default_path_follows_registry_artifact_pointer(tmp_path, mon
     filename from registry.json's ppe_detector.artifact_path field -- not a
     hardcoded literal -- so a promotion can switch the active model purely by
     editing the registry, never by overwriting a file."""
+    pytest.importorskip("ultralytics", reason="ultralytics not installed (backend/requirements-vision.txt)")
     from app.inference import vision_worker_impl as m
     from app.contracts.enums import ModelStatus
 
@@ -85,6 +86,7 @@ def test_load_model_explicit_override_not_matching_active_registry_is_labelled_f
     points at v1.1) must not borrow the registry's active version label --
     it should be labelled from its own filename, proving candidate and active
     artifacts are never conflated."""
+    pytest.importorskip("ultralytics", reason="ultralytics not installed (backend/requirements-vision.txt)")
     from app.inference import vision_worker_impl as m
     from app.contracts.enums import ModelStatus
 

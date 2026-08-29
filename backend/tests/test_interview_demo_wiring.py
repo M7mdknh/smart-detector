@@ -140,6 +140,7 @@ def test_frame_cache_round_trip_and_expiry():
 
 
 def test_render_annotated_frame_draws_without_crashing_and_modifies_pixels():
+    pytest.importorskip("cv2", reason="opencv not installed (backend/requirements-vision.txt)")
     from app.inference.frame_annotation import render_annotated_frame
     from app.inference.vision_worker_impl import TrackDwell
     from app.inference.zone_config import Zone, ZoneConfig
@@ -160,6 +161,7 @@ def test_render_annotated_frame_draws_without_crashing_and_modifies_pixels():
 
 
 def test_render_annotated_frame_handles_untracked_person():
+    pytest.importorskip("cv2", reason="opencv not installed (backend/requirements-vision.txt)")
     from app.inference.frame_annotation import render_annotated_frame
     from app.inference.zone_config import ZoneConfig
 

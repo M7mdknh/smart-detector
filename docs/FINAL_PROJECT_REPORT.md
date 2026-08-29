@@ -395,7 +395,7 @@ Real screenshots: `docs/screenshots/final/09_simulation_overview.png`, `10_simul
 | Playwright e2e — interview-demo flow (real video → real incident → real review) | 1 suite | Passing (verified 2 consecutive runs) |
 | Guided proactive-value demo (`scripts/guided_demo.py`) | 12-step live scenario | Passing |
 | Docker build/up/down verification | — | Passing (`docs/FINAL_VERIFICATION.md`) |
-| Clean-checkout verification | — | Passing, lean-venv path (disk-quota-limited on a second full vision-extras install — disclosed, not a code defect) |
+| Clean-checkout verification | Fresh `git clone` + lean `requirements.txt` install, independent of this working tree | **156 passed, 8 skipped, 0 failed.** Found and fixed a real defect during this exact pass: 4 vision-dependent tests were missing `pytest.importorskip` guards and *failed* (rather than skipped) in a genuinely dependency-free environment — fixed in `test_interview_demo_wiring.py`/`test_vision_v1_2_promotion.py`, re-verified clean in the same clone before the final tag |
 | Artifact checksum verification | 3 registered artifacts | All verified against `models/registry.json` |
 | Acceptance matrix (A01–A18, E01–E12) | 30 rows | 27 PASS, 3 PASS WITH LIMITATION, 0 FAIL |
 | Dataset leakage tests | 4 automated checks (GRU) + 3 checks (vision v1.2 dataset) | All pass, 0 leakage detected |
